@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<!-- www.386dx25.de 2019 -->
+<html lang="en">
+<head><meta charset="utf-8"/>
+<title>Sine scans</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="author" content="386dx25, mnemonic@386dx25.de"/>
+<style>
+html, body {
+  width:  100%;
+  height: 100%;
+  margin: 0;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<h1>Sine scans</h1>
+<canvas id="canvas" width="128" height="128"></canvas>
+<div><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2019</p></div>
+<script>
+var canvas = document.getElementById('canvas');
+var context = canvas.getContext('2d');
+var canvasWidth;
+var canvasHeight;
+var canvasData;
+var imageBuffer;
+
+var doGradient = false;
+
+// --- Drawing functions ---
+
+function pset( x,y, r,g,b,a ) {
+    var index = (x + y * canvasWidth) * 4;
+    if( index>0 && index<(canvasWidth*canvasHeight*4) )
+    {
+      imageBuffer[index + 0] = r;
+      imageBuffer[index + 1] = g;
+      imageBuffer[index + 2] = b;
+      imageBuffer[index + 3] = a;
+    }
+}
+
+function drawLandscape() {
+  canvas.width = window.innerWidth;
+  canvas.height = Math.max(window.innerHeight-160,280);
+  
+  canvasWidth  = canvas.width;
+  canvasHeight = canvas.height;
+  
+  var aspect = canvasWidth / canvasHeight;
+
+  context.clearRect(0,0,canvasWidth,canvasHeight);
+  canvasData = context.getImageData(0, 0, canvasWidth, canvasHeight);
+  imageBuffer = canvasData.data;
+
+  var time = new Date();
+  var dt = time.getMinutes()*60 + time.getSeconds() + time.getMilliseconds()/1000;
+
+  var dy=0.0;
+  var dh=0.12;
+  var h=dh*canvasHeight;
+  var zmin;
+  var x;
+  for( x=0; x < canvasWidth; x++ )
+  {
+    zmin=canvasHeight;
+    for( dy=dh; dy < 2.0; dy+=0.1 )
+    {
+        var dz = 1/((dy+1)*(dy+1));
+        var dx = aspect*x/canvasWidth;
+        var z = Math.floor(dz*canvasHeight+h*Math.sin((1/(dy+1))*dt+17*(dy-dh)+2*Math.PI*dx)*Math.cos(dy*177+dt));
+        if( z < zmin )
+        {
+          if( doGradient ) {
+            var i;
+            for( i=z; i < zmin && i < (z+20); ++i )
+            {
+              var g=128+(i-z)*4;
+              pset( x,i, dy*g,0,0,128-(i-z)*5);
+            }
+          }
+          
+          zmin = z;
+          
+          pset( x,z,   dy*255,0,255,255 );
+          pset( x,z+1, dy*255,0,255,64 );
+          pset( x,z-1, dy*255,0,255,64 );
+        }
+    }
+  }
+  
+  context.putImageData( canvasData, 0,0 );
+}
+
+function update() {
+  drawLandscape();
+  window.requestAnimationFrame(update);
+}
+
+window.requestAnimationFrame(update);
+
+</script>
+</body>
+</html>

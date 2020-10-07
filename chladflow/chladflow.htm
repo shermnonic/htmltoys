@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<!-- www.386dx25.de 2019 -->
+<html lang="en">
+<head><meta charset="utf-8"/>
+<title>Chladni flower</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="author" content="386dx25, mnemonic@386dx25.de"/>
+<script src="app2.js" type="text/javascript"></script>
+<script src="demo.js" type="text/javascript"></script>
+<script id="shadertoy" type="x-shader/x-fragment">
+// Raycast a sphere deformed by a flow from a trigonometric velocity field.
+
+#define ISO 1.2   // isosurface value to visualize
+#define EULER 3   // number of Euler steps in integrating the velocity field
+
+uniform float stepsize; // raycaster stepsize w.r.t. unit volume
+
+const float pi = 3.1415926535897932384;
+
+// Animation parameters
+vec2 mn = vec2(5.0,3.0);    // knot numbers of Chladni pattern
+float alpha = 0.;           // rotation angle of superposition coefficients
+
+void animate()
+{
+  // Uncomment to use mouse
+  //mn = 7.0 * iMouse.xy / iResolution.xy; 
+  
+  // Uncomment for alternative animation
+  //float s=iTime*0.1;
+  //mn = 1.5*vec2(sin(1.3*s+.3)+0.5,cos(s)+1.0)+1.0*vec2(cos(s*.1+.7)+1.0);
+  
+  alpha = iTime;
+}
+
+// Gradient of Chladni 2D superposed eigenfunctions (arbitrary scaled)
+vec2 dfun( vec2 uv, vec2 mn, vec2 c )
+{
+  return 0.3*vec2( -c.x*sin(pi*mn.x*uv.x)*cos(pi*mn.y*uv.y)
+                   -c.y*sin(pi*mn.y*uv.x)*cos(pi*mn.x*uv.y),
+                   -c.x*cos(pi*mn.x*uv.x)*sin(pi*mn.y*uv.y)
+                   -c.y*cos(pi*mn.y*uv.x)*sin(pi*mn.x*uv.y) );
+}
+// Velocity field
+vec3 vel( vec3 p )
+{
+  // Superposition coefficients
+  vec2 c = mat2( cos(alpha), sin(alpha), 
+                -sin(alpha), cos(alpha) ) * vec2(1.0,-1.0);
+  return vec3(dfun(p.xy,mn,c),0);
+}
+
+// Integrate velocity field via Euler-steps (backwards)
+vec3 integrate( vec3 x0 )
+{
+  vec3 x = x0;
+  float h = 1.0 / float(EULER);
+  for( int k=0; k < EULER; k++ )
+    x = x - h * vel( x );
+  return (x-x0);
+}
+
+// Scalar field, warped by a flow, i.e. integrated velocity field
+float field( vec3 p )
+{
+  p += integrate(p); // deformation
+  return dot(p,p); // sphere
+}
+
+// Gradient of (deformed) scalar field via central differences
+vec3 grad( vec3 p )
+{
+  mat3 d = mat3(0.01);
+  return vec3( field(p-d[0]) - field(p+d[0]),
+               field(p-d[1]) - field(p+d[1]),
+               field(p-d[2]) - field(p+d[2]) );
+}
+
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+  vec3 rb = vec3(1.);  // background color
+  vec3 rd = vec3(.9);  // diffuse color
+  vec3 rs = vec3(1.);  // specular color
+  
+  // normalized pixel coordinate
+  vec2 npc = 2.0*fragCoord/iResolution.xy - vec2(1.0,1.0);
+  npc.y /= iResolution.x/iResolution.y;
+  
+  // fade background radially, interlace with black lines
+  float l = length(npc);
+  vec3 bg = 1.-(1.-l)*rb*mod(fragCoord.y,2.0);
+  
+  // skip raycasting beyond a central disc
+  if( l > .9 )
+  {
+    fragColor = vec4(bg,1);
+    return;
+  }
+   
+  animate();
+  
+  // raycaster
+  vec3 p0 = vec3(npc,-1.0);
+  vec3 eye = vec3(0.0,0.0,-2.0);
+  vec3 dir = normalize(p0 - eye);
+  vec4 dst = vec4(bg,1.);
+  for( int i=0; i < 100; ++i )
+  {
+    float s = float(i)*stepsize;
+    if( s >= 1.0 )
+      break;
+      
+    vec3 p = p0 + s*dir;
+    float val = field(p);
+    
+    // isosurface, shaded
+    if( val < ISO )
+    {
+      vec3 l = normalize(vec3(0.5,-0.5,1.0));
+      vec3 n = normalize(grad(p));
+      vec3 h = normalize(0.5*(l+dir));
+      dst = vec4(rd*max(0.0,dot(n,l))+rs*(pow(dot(h,n),42.0)),1.0);
+      break;
+    }
+  }
+  fragColor = dst;
+}
+</script>
+<style>
+html, body {
+  width:  100%;
+  height: 100%;
+  margin: 0;
+  text-align: center;
+}
+canvas {
+  margin:0;
+  padding:0;
+}
+</style>
+</head>
+<body>
+<h1>Chladni flower</h1>
+<canvas id="glcanvas" width="384" height="384"></canvas>
+<div><input size="2" id="framerate"> fps</div>
+<div><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2019</p></div>
+<script>
+window.onload = function() {
+  DEMO.updateCustomUniforms = function(gl,program) {
+    gl.uniform1f( gl.getUniformLocation(program,'stepsize'), 0.023 );
+  }
+
+  APP.common.loglevel = 1;
+  APP.setup("glcanvas");
+  APP.core.init();
+  APP.core.frame();
+}
+</script>
+</body>
+</html>

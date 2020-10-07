@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<!-- www.386dx25.de 2016 -->
+<html lang="en">
+<head><meta charset="utf-8"/>
+<title>Hypnotoads pixel disco</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="author" content="386dx25, mnemonic@386dx25.de"/>
+<style>
+.wrapper {
+  text-align: center;
+  z-index: 10;
+  background-color: rgba(255,255,255,0.9);
+  width: 90%;
+  max-width: 512px;
+  margin: auto;
+  border-radius: 5px;
+  margin-top: 2em;
+}
+h1 {
+  font-size: 140%;
+  padding-top: 0.5em;
+}
+.footer {
+  font-size: 80%;
+}
+canvas { /* https://belenalbeza.com/retro-crisp-pixel-art-in-html-5-games/ */
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+#canvas {
+  width: 100%;
+  max-width: 512px;
+  display: none;
+}
+#matrix {
+  width: 15%;
+  height: 15%;
+  min-width: 75px;
+  min-height: 75px;
+  max-width: 96px;
+}
+#background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: -1;
+  padding: 0;
+}
+input[type=range] {
+  width: 100%;
+  max-width: 500px;
+}
+.button {
+  border: 1px solid gray;
+  border-radius: 4px;
+  padding: 2px;
+  width: 6em;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  margin: 2px 12px;
+  cursor: pointer;
+}
+.button:hover {
+transition: 0.5s;
+  background-color: #1569C7;
+  color: white;
+}
+.container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  text-align: left;
+}
+</style>
+</head>
+<body onresize="resize()">
+<canvas id="background" width="120" height="240"></canvas>
+<div class="wrapper">
+  <header><h1>Hypnotoads pixel disco</h1></header>
+  <div class="container">
+    <canvas id="matrix" width="5" height="5"></canvas>
+    <form id="radio">
+      <div><input type="button" class="button" name="mask" value="random" autofocus /></div>
+      <div><input type="button" class="button" name="mask" value="box" /></div>
+      <div><input type="button" class="button" name="mask" value="cross" /></div>
+    </form>
+  </div>
+    <div>
+      <input id="slider" type="range"  min="0" max="2048" step="8" value="0">
+    <!--<input id="spin"   type="number" min="0" max="2048" step="1" value="0">-->
+    </div>
+  <canvas id="canvas" width="128" height="128"></canvas>
+  <footer class="footer">by <a href="http://www.386dx25.de">386dx25.de</a>, 2016</footer>
+</div>
+<script>
+var canvas = document.getElementById('canvas');
+var background = document.getElementById('background');
+var ctx = canvas.getContext('2d');
+var width  = canvas.width;
+var height = canvas.height;
+var buffer = ctx.getImageData(0,0,width,height);
+var fps = 25;
+var clear = false;
+var matrix = document.getElementById('matrix');
+var vertical_layout = true;
+
+// the magic constant
+var con = 1111;
+
+// the current filter mask
+var mask = new Array(5*5);
+var hw = 2; // half-width of mask (const)
+var weight = 1; // the weight to normalize filter+constant
+
+
+// UI matrix
+function draw_matrix( m ) {
+  var ctx = matrix.getContext('2d');
+  var buffer = ctx.getImageData(0,0,matrix.width,matrix.height);
+  var data = buffer.data;
+  for( var i=0; i < m.length; ++i ) {
+    val = m[i]*255 & 255
+    data[i*4+0] = val;
+    data[i*4+1] = val;
+    data[i*4+2] = val;
+    data[i*4+3] = 255;
+  }
+  ctx.putImageData( buffer, 0,0 );
+}
+
+// UI spin box to adjust constant offset
+var spin = document.getElementById('spin');
+if( spin ) {
+  spin.oninput = function() {
+      con = +this.value;
+  }
+  spin.value = con;
+}
+
+var slider = document.getElementById('slider');
+slider.oninput = function() {
+  con = +this.value;
+  if(spin) spin.value = con;
+}
+slider.value = con;
+
+// UI radio button to select filter mask
+var radio = document.getElementById('radio');
+for( var i=0; i < radio.length; ++i )
+{
+  radio[i].onclick = function() {
+    set_mask( this.value );
+  }
+}
+
+function update_mask() {
+  // update global weights as well
+  weight = 0.;
+  for( var i=0; i < mask.length; ++i )
+    weight += mask[i];
+    
+  // update UI
+  draw_matrix(mask);
+}
+
+// select a filter mask
+function set_mask( name ) {
+  switch (name) {
+  case 'random':
+    for( var i=0; i < mask.length; ++i )
+      mask[i] = Math.random();
+    break;
+  case 'box':
+    mask = [ .0, .0, .0, .0, .0,
+         .0,  1,  1,  1, .0,
+         .0,  1,  0,  1, .0,
+         .0,  1,  1,  1, .0,
+         .0, .0, .0, .0, .0 ];
+    break;
+  default:
+  case 'cross':
+    mask = [ .0, .0, .0, .0, .0,
+         .0, .0,  1, .0, .0,
+         .0,  1,  0,  1, .0,
+         .0, .0,  1, .0, .0,
+         .0, .0, .0, .0, .0 ];
+    break;
+  }
+  
+  update_mask();
+}
+
+function getPositionInCanvas(canvas, e, ec) {
+    var rect = canvas.getBoundingClientRect(e);
+    return {
+        x: (ec.clientX - rect.left) * (canvas.width  / rect.width),
+        y: (ec.clientY - rect.top)  * (canvas.height / rect.height)
+    }
+}
+
+// allow mask editing via mouse
+function mousefunc(e) {
+  pos = getPositionInCanvas(matrix, e, e);
+  var x = Math.floor( pos.x );
+  var y = Math.floor( pos.y );
+  if( x>=0 && x<5 && y>=0 && y<5 )
+    if( mask[y*5+x] > 0.5 ) mask[y*5+x]=0.0; else mask[y*5+x] = 1.0;
+  update_mask();
+}
+
+function init() {
+  set_mask('random');
+  
+  window.addEventListener('resize', resize, false);
+  
+  canvas.addEventListener("mousedown", function(e) { clear=true; }, false);
+  background.addEventListener("mousedown", function(e) { clear=true; }, false);
+  
+  // http://stackoverflow.com/questions/2368784/draw-on-html5-canvas-using-a-mouse
+  matrix.addEventListener("mousedown", function (e) { mousefunc(e) }, false);
+  
+  resize();
+  window.requestAnimationFrame( update );
+}
+
+function resize() {
+  vertical_layout = window.innerWidth > window.innerHeight;
+  background.width = 2*canvas.width-16;
+  background.height = 2*canvas.height-16;
+  if( vertical_layout )
+  {
+    background.style.width = "100%";
+    background.style.height = "auto";
+  }
+  else
+  {
+    background.style.width = "auto";
+    background.style.height = "100%";
+  }
+  draw();
+}
+
+function update() {
+  // http://codetheory.in/controlling-the-frame-rate-with-requestanimationframe/
+  setTimeout(function() {
+    window.requestAnimationFrame( update );
+    draw();
+  }, 1000 / fps);
+}
+
+function draw() {
+  var data = buffer.data;
+  var ofs = 0;
+  var rowofs = width*4;
+  for( y=0; y < height; y++ ) {
+    for( x=0; x < width; x++ ) {
+      var val=0;
+      var alpha=255;
+      if( clear ) {
+        val=255;
+        // nop
+      }
+      else
+      {
+        if( x>hw && x<(width-hw) && y>hw && y<(height-hw) ) {
+          // Convolve mask "in-place"
+          var mi=0;
+          for( row=0; row < 2*hw+1; ++row ) {
+            for( col=0; col < 2*hw+1; ++col ) {
+              val += data[2+ofs + (row-hw)*rowofs + (col-hw)*4] * mask[mi++];
+            }
+          }
+          val = ((val + con) / weight) % 256;
+          alpha = 255;
+        }
+        else 
+        {
+          // Random seed on border
+          val = Math.floor(Math.random()*256);
+          alpha = 0;
+        }
+      }
+      data[ofs++] = val; // R
+      data[ofs++] = val; // G
+      data[ofs++] = val; // B
+      data[ofs++] = alpha; // A
+    }
+  }
+  ctx.putImageData( buffer, 0,0 );
+
+  // update background
+  bg_ctx = background.getContext('2d');
+  if( bg_ctx ) {
+    bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, 0, 0, width-8, height-8 );
+    bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, width-8, 0, width-8, height-8 );
+    bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, 0, height-8, width-8, height-8 );
+    bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, width-8, height-8, width-8, height-8 );
+  }
+  
+  clear=false;
+}
+
+init();
+</script>
+</body>
+</html>

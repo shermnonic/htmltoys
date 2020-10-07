@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"> 
+<!----------------------------------------------------------------------------
+  Monro & Pressing phase space embedding 
+  WebGL implementation by Max Hermann (http://www.386dx25.de) in October 2013
+----------------------------------------------------------------------------->
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<title>Phase space - live audio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="author" content="386dx25, mnemonic@386dx26.de"/>
+<script src="3rdparty/gl-matrix-min.js" type="text/javascript"></script>
+<script src="3rdparty/jscolor/jscolor.js" type="text/javascript"></script>
+<script src="app2.js" type="text/javascript"></script>
+<script src="geometry.js" type="text/javascript"></script>
+<script src="IlluminatedLines2.js" type="text/javascript"></script>
+<script src="audioio.js" type="text/javascript"></script>
+<script src="phasespace.js" type="text/javascript" ></script>
+<script type="text/javascript">
+function toggleDisplay( id ) {
+	var el = document.getElementById( id );
+	if( el ) {
+		var disp = el.style.display;
+		if( disp != 'none' )
+			el.style.display = 'none';
+		else
+			el.style.display = 'inline';
+	}
+}
+
+</script>
+<style type="text/css">
+#ctrlbox * { 
+	font-size: 9pt;
+}
+
+#ctrlbox table, .ctrl {
+	padding: 5pt;
+}
+
+#ctrlbox {
+	display: inline;
+	position: fixed; 
+	top : 10px; 
+	left: 10px; 
+	background: #222222; 
+	border: 1px solid #aaaaaa; 
+	width:200px; 
+	text-align:left;
+}
+
+#ctrlcontent {
+	display: none;
+}
+
+#aboutcontent {
+	display: none;
+}
+
+#displaytoggle a {
+	color: #ddd;
+}
+
+#title, #title a {
+	font-weight: normal;
+	color: #ddd;
+}
+
+a {
+	color: #aaa;
+}
+</style>
+</head>
+
+<body style="background-color:#000000; text-align: center; color: #AAA; font-family: 'Droid Sans', helvetica, arial, sans-serif">
+
+<!-- gl canvas --->
+<canvas id="glcanvas" width="768" height="720">
+<img src="teaser.jpg" alt="WebGL seems not to be supported by your browser!" />
+</canvas>
+
+<!-- controls -->
+<div>
+	User your microphone!<br />
+  <input type="button" onclick="DEMO.setPreset('phasespace')" value="phase" size="3"/>
+  <input type="button" onclick="DEMO.setPreset('oscilloscope')" value="wave" size="3"/>
+</div>
+
+<!-- developer controls -->
+<div id="ctrlbox">
+  <div id="title">
+  Phase space by <a href="http://www.386dx25.de">386dx25</a>
+  </div>
+  <hr />
+  <div id="displaytoggle">
+  <a href="#" onclick="toggleDisplay('aboutcontent');">+ About</a>
+  </div>
+  <div id="aboutcontent">
+  <p>This page shows an audio reactive WebGL visualization. The audio signal is embedded
+  into 3-space using the technique of Monro and Pressing (1998) where x, y and z coordinates
+  are given by the sample (amplitude) values at shifted positions p, p+s and p+2*s where s 
+  denotes the shift. Thereby graphical representations of sound characteristic are generated.
+  </p>
+  </div> <!-- aboutcontent -->
+  <div id="displaytoggle">
+  <a href="#" onclick="toggleDisplay('ctrlcontent');">+ Controls</a>
+  </div>
+  <div id="ctrlcontent">
+  <table>
+    <tr>
+	  <td>preset:</td> 
+	  <td><select id="demoui.preset" onchange="DEMO.onUIPreset()">
+			<option>phasespace</option>
+			<option>oscilloscope</option>
+		  </select></td>
+	</tr>
+	<tr>
+	  <td>mode:</td>
+	  <td><select id="demoui.mode" onchange="DEMO.onUIChange()">
+			<option>fancy</option>
+			<option>plain</option>
+			<option>plain unlit</option>
+		  </select></td>		  
+	</tr>
+	<tr>
+	  <td>line width:</td>
+	  <td><input size="4" id="demoui.linewidth" onchange="DEMO.onUIChange()"></td>
+	</tr>
+	<tr>
+	  <td>point size:</td>
+	  <td><input size="4" id="demoui.pointsize" onchange="DEMO.onUIChange()"></td>
+	</tr>
+	<tr>
+	  <td>low pass:</td>
+	  <td><input type="checkbox" id="demoui.lowpassfilter" onclick="DEMO.onUIChange()"></td>
+	</tr>
+	<tr>
+	  <td>ambient:</td>
+	  <td><input id="demoui.ambient"  style="width:80px;" class="color {onImmediateChange:'DEMO.onUIColorAmbient(this);'}" value="66ff00"></td>
+	</tr>
+	<tr>
+	  <td>specular:</td>
+	  <td><input id="demoui.specular" style="width:80px;" class="color {onImmediateChange:'DEMO.onUIColorSpecular(this);'}" value="66ff00"></td>
+	</tr>
+	<tr>
+	  <td>background:</td>
+	  <td><input id="demoui.bgcolor" style="width:80px;" class="color {onImmediateChange:'DEMO.onUIColorBackground(this);'}" value="000000"></td>
+	</tr>
+	<tr>
+	  <td>phaseshift:</td>
+	  <td><input size="4" id="demoui.phaseshift" onchange="DEMO.onUIChange()"></td>
+	</tr>
+	<tr>
+	  <td>phasescale:</td>
+	  <td><input size="4" id="demoui.phasescale" onchange="DEMO.onUIChange()"></td>
+	</tr>
+  </table>
+  
+  <hr />
+
+  <div class="ctrl"><!--style="display: none;"-->  
+    <input type="button" onclick="pauseRendering('renderPause')" value="pause" size="1" id="renderPause"/><br />
+  </div>
+
+  <hr />
+
+  <div class="ctrl"><!--style="display: none;"-->  
+    <input size="2" id="framerate"> fps
+    <input size="5" id="numsamples"> samples
+  </div>  
+  </div> <!-- ctrlcontent -->
+</div> <!-- ctrlbox -->
+
+<!-- about/credits -->
+<div style="font-size: 80%;">
+Created by <a href="http://www.386dx25.de">386dx25</a> in October 2013.<br />
+Requires Javascript, WebGL and OGG audio. Tested on Chrome 30 and Firefox 24.0.
+</div>
+
+
+<script>
+var	audioio = createAudioIO();
+
+//------------------------------------------------------------------------------
+// main
+//------------------------------------------------------------------------------
+window.onload = function() {
+	APP.common.loglevel = 1;
+	APP.setup("glcanvas");
+	APP.core.init();
+
+	audioio.callback = DEMO.onUpdatedAudioSignal;
+	audioio.onload();
+	
+	APP.core.frame();
+}
+
+//------------------------------------------------------------------------------
+// gui
+//------------------------------------------------------------------------------
+function pauseRendering( buttonID ) {
+	// toggle animate / paused
+	switch( APP.core.state ) {	
+	default:		
+	case 'animate':	
+		APP.core.state = 'paused';	
+		document.getElementById(buttonID).value = "animate";
+		break;
+	case 'paused' : 
+		APP.core.state = 'animate'; 
+		document.getElementById(buttonID).value = "pause";
+		// trigger animation
+		APP.core.frame();
+		break;
+	}
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<!-- www.386dx25.de 2020 -->
+<html lang="en">
+<head><meta charset="utf-8"/>
+<title>sinescans2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+<meta name="author" content="386dx25, mnemonic@386dx25.de"/>
+<style>
+html, body {
+  width:  100%;
+  height: 95%;
+  margin: 0;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<h1>sinescans2</h1>
+<canvas id="canvas" width="128" height="128"></canvas>
+<div><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2020</p></div>
+<script>
+const canvas = document.getElementById('canvas');
+const context = canvas.getContext('2d');
+
+var canvasData;
+var imageBuffer;
+
+var time = 0;
+
+var currentFunc = 0;
+
+var func_t = 0.0;
+var func_a = 1.0;
+
+function fmod(a,b) { return (a - (Math.floor(a / b) * b)); };
+
+function powinvtent(x,a) {
+    return 1.0-Math.pow(Math.abs(fmod(x,2.0)-1.0),a);
+}
+
+var funcs = [
+  function(x,y,t,a) { return 2.5*(powinvtent(x,a)*powinvtent(y*2.0,a) - 0.7); },
+  function(x,y,t,a) { return 2.5*(powinvtent(x+Math.sin(y*2.0),a) - 0.7); },
+  function(x,y,t,a) { return Math.max(5*Math.min(1 - Math.abs(.75*x),1 - Math.abs(.75*y)),0); }, // tent
+  function(x,y,t,a) { return 0.5*Math.sin(Math.PI*x)*Math.sin(Math.PI*y)/(x*y); }, // Bessel
+  function(x,y,t,a) { return 3*Math.exp(-((x-1.5)*(x-1.5)+y*y)/0.5); }, // Gaussian
+  function(x,y,t,a) { return 2*Math.cos(Math.PI*x/2.5)*Math.sin(Math.PI*y/2.5); }, // plasma
+  function(x,y,t,a) { return x*y; }, // saddle
+  function(x,y,t,a) { return 4*(1/(1+Math.exp(-4*x)) - 0.5); }, // sigmoid
+];
+
+var transition = {
+  inProgress: false,
+  lambda: 0,
+  fromIndex: 0,
+  toIndex: 0,
+  start( startTime, fromIndex, toIndex ) {
+    if( !this.inProgress ) {
+      this.inProgress = true;
+      this.fromIndex = fromIndex;
+      this.toIndex = toIndex
+      this.startTime = startTime;
+      this.lambda = 0.0;
+    }
+  },  
+  update( time ) { // returns false on transition done
+    if( this.inProgress )
+    {
+      this.lambda = time - this.startTime;
+      if( this.lambda >= 1.0 )
+      {
+        this.lambda = 1.0;
+        this.inProgress = false;
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
+function requestTransition( step ) {
+  console.log(step);
+  if(step < 0) step = funcs.length + step;
+  transition.start( time, currentFunc, (currentFunc + step) % funcs.length );
+}
+
+function evalFunc(x,y) {
+  if( transition.inProgress )
+    return (1-transition.lambda)*funcs[transition.fromIndex](x,y,func_t,func_a) + transition.lambda*funcs[transition.toIndex](x,y,func_t,func_a);
+  else
+    return funcs[currentFunc](x,y,func_t,func_a);
+}
+
+function updateGlobals() {
+  canvas.width = window.innerWidth;
+  canvas.height = Math.max(window.innerHeight-160,280);
+  
+  canvas.width  = canvas.width;
+  canvas.height = canvas.height;
+  
+  context.clearRect(0,0,canvas.width,canvas.height);
+  canvasData = context.getImageData(0, 0, canvas.width, canvas.height);
+  imageBuffer = canvasData.data;
+}
+
+function updateAnimation() {
+  func_t = time*0.2; 
+  func_a = 3.5*Math.sin(func_t)*Math.sin(func_t)+0.5;
+  
+  if( !transition.update(time) ) {
+    currentFunc = transition.toIndex;
+  }
+}
+
+function pset( x,y, r,g,b,a ) {
+  var index = (x + y * canvas.width) * 4;
+  if( index>0 && index<(canvas.width*canvas.height*4) )
+  {
+    imageBuffer[index + 0] = r;
+    imageBuffer[index + 1] = g;
+    imageBuffer[index + 2] = b;
+    imageBuffer[index + 3] = a;
+  }
+}
+
+function drawLandscape() {
+  var aspect = canvas.width / canvas.height;
+
+  const dh=0.2;
+  const dhmax=2;
+  const unitheight=dh*canvas.height;
+  var zmin=0;
+  
+  var dz=0.0;
+  var xn=0.0;
+  var yn=0.0;
+  var f=0.0;
+  var zi=0;
+  
+  var sin_a = Math.sin(time*0.3);
+  var cos_a = Math.cos(time*0.3);
+  var x = 0.0;
+  var y = 0.0;
+  
+  const roll_landscape = false;
+  const rotate = true;
+  
+  for( var xi=0; xi < canvas.width; xi++ ) {
+    zmin=canvas.height;
+    
+    const stepsize = 0.1;
+    const nsteps = (dhmax - dh) / stepsize;
+    for( var istep=0; istep < nsteps; ++istep ) {
+      
+      var ofs = 0.0;
+      if( roll_landscape )
+        ofs = Math.abs((Math.floor(0.25*time*1000)%1000)/1000.0);
+      var dy = dh + (istep + ofs)*stepsize;
+      
+      dz = 1/((dy+1)*(dy+1));
+      xn = aspect*(xi-canvas.width*0.5)/canvas.width/dz;
+      yn = 2*(dy-dh)/(dhmax-dh) - 0.5;
+
+      const scale = 2.5;
+      xn = xn*scale;
+      yn = yn*scale;
+
+      if( rotate ) {
+        x = -cos_a*xn + sin_a*yn;
+        y =  sin_a*xn + cos_a*yn;
+      } else {
+        x = xn;
+        y = yn;
+      }
+
+      f = evalFunc(x,y);
+
+      zf = dz*canvas.height - f*dz*unitheight;
+      zi = Math.floor(zf);
+      zd = zf - zi;
+      if( zi < zmin ) {
+        zmin = zi;
+        
+        var fade = 1;
+        if(roll_landscape) {
+          if( istep===0 ) fade = ofs;
+          else if( istep===nsteps-1 ) fade = 1-ofs;
+        }
+        pset( xi,zi,   dy*255,0,255,fade*255*(1.0-Math.abs(zd)) );
+        pset( xi,zi+1, dy*255,0,255,fade*255*Math.abs(zd) );
+      }
+    }
+  }
+
+  context.putImageData( canvasData, 0,0 );
+}
+
+
+function onClick(e) {
+  var c = e.touches ? e.touches[0] : e;
+  if(c.clientX) {
+    requestTransition( (c.clientX > canvas.width/2) ? +1 : -1 );
+  }
+}
+
+
+function update(timestamp) {
+  time = timestamp*0.001;
+  updateGlobals();
+  updateAnimation();
+  drawLandscape();
+  window.requestAnimationFrame(update);
+  canvas.addEventListener("click", onClick, true);
+}
+
+window.requestAnimationFrame(update);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<!-- www.386dx25.de 2017, HTML5 port of "Serendipitous circles" Byte 1977 -->
+<html lang="en">
+<head><meta charset="utf-8"/>
+<title>Serendipitous circles</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="author" content="386dx26, mnemonic@386dx25.de"/>
+<style>
+body {
+  text-align: center;
+}
+#canvas {
+  width: 90%;
+  height: auto;
+  max-width: 512px;
+  max-height: 512px;
+}
+</style>
+</head>
+<body>
+<h1>Serendipitous circles</h1>
+<div>
+    x=<input id="x0" type="number" min="0" max="4096" step="1" value="0">
+    y=<input id="y0" type="number" min="0" max="4096" step="1" value="0">
+    a=<input id="a" type="number" min="0" max="16" step="1" value="0">
+    b=<input id="b" type="number" min="0" max="16" step="1" value="0">
+    <br />
+    n=<input id="n" type="number" min="0" max="131072" step="1" value="0">
+    <!--<input id="update" type="button" value="Update">-->
+    <input id="random" type="button" value="Random">
+    <input id="reset"  type="button" value="Reset">
+</div>
+<canvas id="canvas" width="512" height="512"></canvas>
+<div><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2017</p></div>
+<script>
+var canvas = document.getElementById('canvas');
+var context = canvas.getContext('2d');
+var canvasWidth  = canvas.width;
+var canvasHeight = canvas.height;
+var canvasData = context.getImageData(0, 0, canvasWidth, canvasHeight);
+
+// --- Drawing functions ---
+
+function pset( x,y, r,g,b,a ) {
+    var index = (x + y * canvasWidth) * 4;
+    canvasData.data[index + 0] = r;
+    canvasData.data[index + 1] = g;
+    canvasData.data[index + 2] = b;
+    canvasData.data[index + 3] = a;
+}
+
+function clear() {
+    var x,y,c,index=0;
+    for( y=0; y < canvasHeight; y++ )
+        for( x=0; x < canvasWidth; x++ )
+            for( c=0; c < 4; c++, index++ )
+                canvasData.data[index] /= 2;
+}
+
+// integer arithmetic cast
+function INT(f) 
+//{ return f | 0; } // efficient trick to convert to 32bit signed integer, identical to trunc()
+//{ return f >>> 0; } // trick to convert to 32bit unsigned integer
+//{ return Math.trunc(f); } // trunc(f) = floor(f) for f>0 and ceil(f) for f<0
+//{ return Math.floor(f); }
+//{ return Math.ceil(f); }
+{ return Math.round(f); }
+
+function pset_centered_wrapped( x,y, r,g,b,a ) {
+    var ix = (x + INT(canvasWidth /2)) % canvasWidth;
+    var iy = (y + INT(canvasHeight/2)) % canvasHeight;
+    pset(ix,  iy,  r,g,b,a);
+    pset(ix+1,iy+1,r,g,b,a);
+    pset(ix+1,iy,  r,g,b,a);
+    pset(ix,  iy+1,r,g,b,a);
+}
+
+function updateCanvas() {
+    context.putImageData( canvasData, 0,0 );
+}
+
+function drawSerendipitousCircle( x0, y0, a,b, mask, n ) {
+    //console.log("drawSerendipitousCircle("+x0+","+y0+","+a+","+b+","+mask+")");
+
+    var x = INT(x0);
+    var y = INT(y0);
+    
+    var i;
+    for( i=0; i < n; i++ )
+    {
+        var c = 255; //Math.floor(255*i/(n-1)) % 255;
+        pset_centered_wrapped( x & mask, y & mask, 0,0,c,255 );
+        
+        x = INT(x - INT(y/a));
+        y = INT(y + INT(x/b));
+    }
+}
+
+// --- Parameters ---
+
+var params;
+var numSamples = 4096;
+
+function resetParams() {
+  params = [ 100,100, 8,8 ];
+  numSamples = 4096;
+}
+
+resetParams();
+
+function randomParams() {
+  params[0] = Math.floor(Math.random()*4*1024); //0xFFFF);
+  params[1] = Math.floor(Math.random()*4*024); //0xFFFF);
+  params[2] = Math.random()*16;
+  params[3] = Math.random()*16;
+}
+
+var presets =
+        // x0 , y0 ,  a,b
+      [ [2492 ,5451,  2,2],
+        [30055,14195, 2,2],
+        
+        [743  ,568 , 2,2],
+        [729  ,332 , 2,2],
+        [616  ,655 , 2,2],
+        [667  ,39  , 2,2],
+        
+        [3886 ,37  , 2,2],
+        [3495 ,60  , 2,2],
+        [2845 ,16  , 2,2],
+        
+        [270  ,39  , 9 ,12],
+        [652  ,53  ,16 ,12],
+        [888  ,40  ,16 ,16],
+        
+        [1581 ,19  ,13.6761684014937 ,3.109404838623010],
+        [1410 ,30  ,5.33938077387224 ,9.684132857211903],
+        [1511 ,10  ,11.5380858021985 ,5.462619158802685],
+        [315  ,45  ,9.70967268477412 ,11.50255892055613],
+        [381  ,65  ,8.96190815713939 ,8.384236965988574],
+        [148  ,62  ,14.1203697116741 ,8.690187091544452],
+        [3665 ,10  ,14.3243592597862 ,12.48387674152859],
+        [2646 ,59  ,4.12503876462789 ,4.443343577681279],
+        [3830 ,24  ,0.56128201719391 ,1.006297675778807],
+        [2134 ,42  ,12.0562004122835 ,6.568503947447102],
+        [2714 ,60  ,14.6757138955930 ,6.300332553715741],
+        
+        [112,65, 12.815198904573311, 15.713804109024885] ];
+console.log("Serendipitous circle, "+presets.length+" presets available")
+
+function presetParam( i ) {
+  params = presets[i];
+}
+
+// --- UI functions ---
+
+var ui_x0 = document.getElementById('x0');
+var ui_y0 = document.getElementById('y0');
+var ui_a  = document.getElementById('a');
+var ui_b  = document.getElementById('b');
+var ui_n  = document.getElementById('n');
+
+function updateUI() {
+  ui_x0.value = params[0];
+  ui_y0.value = params[1];
+  ui_a.value  = params[2];
+  ui_b.value  = params[3];
+  ui_n.value  = numSamples;
+}
+
+function updateGraphics() {
+  clear();
+  drawSerendipitousCircle( params[0],params[1], params[2],params[3], 0xFFFF, numSamples );
+  updateCanvas();
+}
+
+function update() {
+  updateGraphics();
+  updateUI();
+}
+
+ui_x0.oninput = function() { params[0] = this.value; updateGraphics(); }
+ui_y0.oninput = function() { params[1] = this.value; updateGraphics(); }
+ui_a.oninput  = function() { params[2] = this.value; updateGraphics(); }
+ui_b.oninput  = function() { params[3] = this.value; updateGraphics(); }
+ui_n.oninput  = function() { numSamples= this.value; updateGraphics(); }
+
+//var ui_update = document.getElementById('update');  ui_update.onclick = function() { update(); }
+var ui_random = document.getElementById('random');  ui_random.onclick = function() { randomParams(); update(); }
+var ui_reset  = document.getElementById('reset');   ui_reset.onclick  = function() { resetParams(); update(); }
+
+updateUI();
+update();
+
+</script>
+</body>
+</html>
