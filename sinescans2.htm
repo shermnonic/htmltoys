@@ -33,6 +33,10 @@ var imageBuffer;
 
 var time = 0;
 
+var roll_landscape = false;
+var rotate = true;
+var rotation_time = 0.0;
+
 var currentFunc = 0;
 
 var func_t = 0.0;
@@ -97,26 +101,6 @@ function evalFunc(x,y) {
     return funcs[currentFunc](x,y,func_t,func_a);
 }
 
-function updateGlobals() {
-  canvas.width = window.innerWidth;
-  canvas.height = Math.max(window.innerHeight-160,280);
-  
-  canvas.width  = canvas.width;
-  canvas.height = canvas.height;
-  
-  context.clearRect(0,0,canvas.width,canvas.height);
-  canvasData = context.getImageData(0, 0, canvas.width, canvas.height);
-  imageBuffer = canvasData.data;
-}
-
-function updateAnimation() {
-  func_t = time*0.2; 
-  func_a = 3.5*Math.sin(func_t)*Math.sin(func_t)+0.5;
-  
-  if( !transition.update(time) ) {
-    currentFunc = transition.toIndex;
-  }
-}
 
 function pset( x,y, r,g,b,a ) {
   var index = (x + y * canvas.width) * 4;
@@ -143,13 +127,10 @@ function drawLandscape() {
   var f=0.0;
   var zi=0;
   
-  var sin_a = Math.sin(time*0.3);
-  var cos_a = Math.cos(time*0.3);
+  var sin_a = Math.sin(rotation_time*0.3);
+  var cos_a = Math.cos(rotation_time*0.3);
   var x = 0.0;
   var y = 0.0;
-  
-  const roll_landscape = false;
-  const rotate = true;
   
   for( var xi=0; xi < canvas.width; xi++ ) {
     zmin=canvas.height;
@@ -171,13 +152,8 @@ function drawLandscape() {
       xn = xn*scale;
       yn = yn*scale;
 
-      if( rotate ) {
-        x = -cos_a*xn + sin_a*yn;
-        y =  sin_a*xn + cos_a*yn;
-      } else {
-        x = xn;
-        y = yn;
-      }
+      x = -cos_a*xn + sin_a*yn;
+      y =  sin_a*xn + cos_a*yn;
 
       f = evalFunc(x,y);
 
@@ -204,21 +180,67 @@ function drawLandscape() {
 
 function onClick(e) {
   var c = e.touches ? e.touches[0] : e;
-  if(c.clientX) {
-    requestTransition( (c.clientX > canvas.width/2) ? +1 : -1 );
+  if(c.clientX && c.clientY) {
+    if(c.clientX > canvas.width/4 && c.clientX < 3*canvas.width/4) {
+      if(c.clientY < canvas.height/3) {
+        roll_landscape = !roll_landscape;
+      } else if(c.clientY > 2*canvas.height/3) {
+        rotate = !rotate;
+      } else {   
+        requestTransition( (c.clientX > canvas.width/2) ? +1 : -1 );
+      }      
+    } else {   
+      requestTransition( (c.clientX > canvas.width/2) ? +1 : -1 );
+    }
   }
 }
 
-
-function update(timestamp) {
-  time = timestamp*0.001;
-  updateGlobals();
-  updateAnimation();
-  drawLandscape();
-  window.requestAnimationFrame(update);
-  canvas.addEventListener("click", onClick, true);
+function updateGlobals() {
+  canvas.width = window.innerWidth;
+  canvas.height = Math.max(window.innerHeight-160,280);
+  
+  canvas.width  = canvas.width;
+  canvas.height = canvas.height;
+  
+  context.clearRect(0,0,canvas.width,canvas.height);
+  canvasData = context.getImageData(0, 0, canvas.width, canvas.height);
+  imageBuffer = canvasData.data;
 }
 
+function updateAnimation( dt ) {
+  func_t = time*0.2; 
+  func_a = 3.5*Math.sin(func_t)*Math.sin(func_t)+0.5;
+  
+  if( rotate ) {
+    rotation_time = rotation_time + dt*0.001;
+  }
+  
+  if( !transition.update(time) ) {
+    currentFunc = transition.toIndex;
+  }
+}
+
+function updateAll(dt) {
+  time = time + dt*0.001;
+  updateGlobals();
+  updateAnimation(dt);
+  drawLandscape();
+}
+
+let t0;
+let tlast;
+function update(timestamp) {
+  if(t0 === undefined) {
+    t0 = timestamp;
+    tlast = timestamp;
+  }            
+  const dt = timestamp - tlast;
+  updateAll(dt);
+  window.requestAnimationFrame(update);
+  tlast = timestamp;
+}  
+
+canvas.addEventListener("click", onClick, true);
 window.requestAnimationFrame(update);
 
 </script>
