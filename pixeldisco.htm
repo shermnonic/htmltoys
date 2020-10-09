@@ -90,40 +90,96 @@ transition: 0.5s;
   <div class="container">
     <canvas id="matrix" width="5" height="5"></canvas>
     <form id="radio">
-      <div><input type="button" class="button" name="mask" value="random" autofocus /></div>
-      <div><input type="button" class="button" name="mask" value="box" /></div>
-      <div><input type="button" class="button" name="mask" value="cross" /></div>
+      <div><input type="button" class="button" name="kernel" value="random" autofocus /></div>
+      <div><input type="button" class="button" name="kernel" value="box" /></div>
+      <div><input type="button" class="button" name="kernel" value="cross" /></div>
     </form>
   </div>
     <div>
       <input id="slider" type="range"  min="0" max="2048" step="8" value="0">
     <!--<input id="spin"   type="number" min="0" max="2048" step="1" value="0">-->
     </div>
+    <div>
+      <a href="#" id="permalink">[permalink w/ current settings]</a>
+    </div>
   <canvas id="canvas" width="128" height="128"></canvas>
   <footer class="footer">by <a href="http://www.386dx25.de">386dx25.de</a>, 2016</footer>
 </div>
 <script>
-var canvas = document.getElementById('canvas');
+var canvas     = document.getElementById('canvas');
 var background = document.getElementById('background');
-var ctx = canvas.getContext('2d');
+var ctx    = canvas.getContext('2d');
 var width  = canvas.width;
 var height = canvas.height;
 var buffer = ctx.getImageData(0,0,width,height);
 var fps = 25;
-var clear = false;
-var matrix = document.getElementById('matrix');
+var clear = true;
 var vertical_layout = true;
+var matrix = document.getElementById('matrix');
+var spin   = document.getElementById('spin');
+var slider = document.getElementById('slider');
+var radio  = document.getElementById('radio');
+var permalink = document.getElementById('permalink');
 
 // the magic constant
 var con = 1111;
 
-// the current filter mask
-var mask = new Array(5*5);
-var hw = 2; // half-width of mask (const)
-var weight = 1; // the weight to normalize filter+constant
+// the current filter kernel
+var kernel = new Array(5*5);
+const hw = 2; // half-width of kernel
+var weight = 1.0; // the weight to normalize filter+constant
+var kernel_name = '';
 
 
-// UI matrix
+function kernel_to_string(k) {
+  let s = '';
+  for( var i=0; i < k.length; ++i ) {
+    s += Math.floor(k[i]*255);
+    if( i < k.length-1 ) s += ',';
+  }
+  return s;
+}
+
+function kernel_from_string(s) {
+  let k = new Array(5*5);
+  let tokens = s.split(',',k.length);  
+  if( tokens && tokens.length == k.length ) {
+    for( var i=0; i < k.length; ++i ) { 
+      k[i] = parseInt(tokens[i])/255.0;
+    }
+    return k;
+  }
+  return null;
+}
+
+function parse_query_string() {
+  // parse url parameters
+  let params = new URLSearchParams(document.location.search.substring(1));  
+  kernel_in = params.get("kernel");
+  con_in = parseInt(params.get("con"));
+  data_in = params.get("data");
+  if(kernel_in) set_kernel(kernel_in);
+  if(con_in) con = con_in;
+  if(data_in) {
+    let k = kernel_from_string(data_in);
+    console.log(k);
+    if(k)
+      set_kernel_data(k);
+    else
+      console.log('Kernel data malformed');
+  }
+}
+
+function update_permalink() {
+  if(permalink) {
+    let query_string = '?' + 'kernel=' + kernel_name + '&con=' + con;
+    if( kernel_name==='data' ) 
+      query_string += '&data=' + kernel_to_string(kernel);
+    permalink.href = '//' + location.host + location.pathname + query_string;
+  }
+}
+
+
 function draw_matrix( m ) {
   var ctx = matrix.getContext('2d');
   var buffer = ctx.getImageData(0,0,matrix.width,matrix.height);
@@ -138,97 +194,109 @@ function draw_matrix( m ) {
   ctx.putImageData( buffer, 0,0 );
 }
 
-// UI spin box to adjust constant offset
-var spin = document.getElementById('spin');
-if( spin ) {
-  spin.oninput = function() {
-      con = +this.value;
-  }
-  spin.value = con;
-}
-
-var slider = document.getElementById('slider');
-slider.oninput = function() {
-  con = +this.value;
-  if(spin) spin.value = con;
-}
-slider.value = con;
-
-// UI radio button to select filter mask
-var radio = document.getElementById('radio');
-for( var i=0; i < radio.length; ++i )
-{
-  radio[i].onclick = function() {
-    set_mask( this.value );
-  }
-}
-
-function update_mask() {
-  // update global weights as well
+function update_kernel() {
   weight = 0.;
-  for( var i=0; i < mask.length; ++i )
-    weight += mask[i];
+  for( var i=0; i < kernel.length; ++i )
+    weight += kernel[i];
     
-  // update UI
-  draw_matrix(mask);
+  draw_matrix(kernel);
+  
+  update_permalink();
 }
 
-// select a filter mask
-function set_mask( name ) {
+function set_kernel_data( k ) {
+  console.log(k);
+  if(k && k.length == kernel.length)
+    for(var i=0; i < kernel.length; ++i)
+      kernel[i] = k[i];
+  update_kernel();
+}
+
+function set_kernel( name ) {
   switch (name) {
+  default:
   case 'random':
-    for( var i=0; i < mask.length; ++i )
-      mask[i] = Math.random();
+    for( var i=0; i < kernel.length; ++i )
+      kernel[i] = Math.random();
     break;
   case 'box':
-    mask = [ .0, .0, .0, .0, .0,
+    kernel = [ .0, .0, .0, .0, .0,
          .0,  1,  1,  1, .0,
          .0,  1,  0,  1, .0,
          .0,  1,  1,  1, .0,
          .0, .0, .0, .0, .0 ];
     break;
-  default:
   case 'cross':
-    mask = [ .0, .0, .0, .0, .0,
+    kernel = [ .0, .0, .0, .0, .0,
          .0, .0,  1, .0, .0,
          .0,  1,  0,  1, .0,
          .0, .0,  1, .0, .0,
          .0, .0, .0, .0, .0 ];
     break;
   }
-  
-  update_mask();
+  kernel_name = name;
+  update_kernel();
 }
 
+
 function getPositionInCanvas(canvas, e, ec) {
-    var rect = canvas.getBoundingClientRect(e);
+    let rect = canvas.getBoundingClientRect(e);
     return {
         x: (ec.clientX - rect.left) * (canvas.width  / rect.width),
         y: (ec.clientY - rect.top)  * (canvas.height / rect.height)
     }
 }
 
-// allow mask editing via mouse
+// allow editing of kernel matrix via mouse
 function mousefunc(e) {
   pos = getPositionInCanvas(matrix, e, e);
   var x = Math.floor( pos.x );
   var y = Math.floor( pos.y );
-  if( x>=0 && x<5 && y>=0 && y<5 )
-    if( mask[y*5+x] > 0.5 ) mask[y*5+x]=0.0; else mask[y*5+x] = 1.0;
-  update_mask();
+  if( x>=0 && x<5 && y>=0 && y<5 ) {
+    if( kernel[y*5+x] > 0.5 ) kernel[y*5+x]=0.0; else kernel[y*5+x] = 1.0;
+    kernel_name = 'data';
+    update_kernel();
+  }
 }
 
+
 function init() {
-  set_mask('random');
+  set_kernel('random');
+
+  parse_query_string();
   
-  window.addEventListener('resize', resize, false);
+  if( spin ) {
+    spin.oninput = function() {
+        con = +this.value;
+        update_permalink();
+    }
+    spin.value = con;
+  }
+
+  if( slider ) {
+    slider.oninput = function() {
+      con = +this.value;
+      update_permalink();
+      if(spin) spin.value = con;
+    }
+    slider.value = con;
+  }
+
+  if( radio ) {
+    for( var i=0; i < radio.length; ++i ) {
+      radio[i].onclick = function() {
+        set_kernel( this.value );
+      }
+    }
+  }  
   
-  canvas.addEventListener("mousedown", function(e) { clear=true; }, false);
+  window.addEventListener('resize', resize, false);  
+  canvas    .addEventListener("mousedown", function(e) { clear=true; }, false);
   background.addEventListener("mousedown", function(e) { clear=true; }, false);
-  
+  matrix    .addEventListener("mousedown", function(e) { mousefunc(e) }, false); 
   // http://stackoverflow.com/questions/2368784/draw-on-html5-canvas-using-a-mouse
-  matrix.addEventListener("mousedown", function (e) { mousefunc(e) }, false);
   
+  // start rendering
   resize();
   window.requestAnimationFrame( update );
 }
@@ -268,16 +336,15 @@ function draw() {
       var alpha=255;
       if( clear ) {
         val=255;
-        // nop
       }
       else
       {
         if( x>hw && x<(width-hw) && y>hw && y<(height-hw) ) {
-          // Convolve mask "in-place"
+          // Convolve with kernel "in-place"
           var mi=0;
           for( row=0; row < 2*hw+1; ++row ) {
             for( col=0; col < 2*hw+1; ++col ) {
-              val += data[2+ofs + (row-hw)*rowofs + (col-hw)*4] * mask[mi++];
+              val += data[2+ofs + (row-hw)*rowofs + (col-hw)*4] * kernel[mi++];
             }
           }
           val = ((val + con) / weight) % 256;
