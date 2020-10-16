@@ -14,12 +14,11 @@
 #define EULER 3   // number of Euler steps in integrating the velocity field
 
 uniform float stepsize; // raycaster stepsize w.r.t. unit volume
+uniform vec2 mn; // (e.g. =vec2(5.0,3.0)) knot numbers of Chladni pattern
+
+float alpha = 0.;  // rotation angle of superposition coefficients
 
 const float pi = 3.1415926535897932384;
-
-// Animation parameters
-vec2 mn = vec2(5.0,3.0);    // knot numbers of Chladni pattern
-float alpha = 0.;           // rotation angle of superposition coefficients
 
 void animate()
 {
@@ -86,9 +85,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
   vec2 npc = 2.0*fragCoord/iResolution.xy - vec2(1.0,1.0);
   npc.y /= iResolution.x/iResolution.y;
   
-  // fade background radially, interlace with black lines
+  // fade background radially, interlaced lines
   float l = length(npc);
-  vec3 bg = 1.-(1.-l)*rb*mod(fragCoord.y,2.0);
+  vec3 bg = 1.-(1.-l)*rb*mod(fragCoord.y,3.0);
   
   // skip raycasting beyond a central disc
   if( l > .9 )
@@ -139,21 +138,58 @@ canvas {
 }
 </style>
 </head>
-<body>
-<h1>Chladni flower</h1>
-<canvas id="glcanvas" width="384" height="384"></canvas>
-<div><input size="2" id="framerate"> fps</div>
+<body onresize="resize()">
+<h1 style="margin-bottom:0pt;">Chladni flower</h1>
+<canvas id="glcanvas" width="320" height="320"></canvas>
+<div><span id="knotInfo"></span></div>
+<div style="position: absolute; top: 0; right: 0; color:#aaa"><input size="2" id="framerate" style="border: 0; text-align: right; color:#aaa"> fps</div>
 <div><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2019</p></div>
 <script>
+var canvas = document.getElementById("glcanvas");
+var knotVector = [5.0, 3.0];
+
+function resize() {
+  if(canvas) {
+    var size = Math.max( 128, Math.min( 768, Math.floor(0.8*Math.min(window.innerWidth, window.innerHeight)) ));
+    canvas.width = size;
+    canvas.height = size;
+    APP.setup("glcanvas");
+    updateKnotInfo();
+  }
+}
+
+function updateKnotInfo() {
+  var info = document.getElementById("knotInfo");
+  if(info) {
+    info.innerHTML = "(" + knotVector[0].toFixed(2) + ", " + knotVector[1].toFixed(2) + ")";
+  }
+}
+
+function touchAndClickHandler(e) {
+  if(APP.mouse.buttonDown[0]) {
+    knotVector[0] = 7.0 * APP.mouse.lastPos[0] / APP.core.gl.viewportWidth;
+    knotVector[1] = 7.0 * APP.mouse.lastPos[1] / APP.core.gl.viewportHeight;
+    updateKnotInfo();
+  }
+}
+
 window.onload = function() {
   DEMO.updateCustomUniforms = function(gl,program) {
     gl.uniform1f( gl.getUniformLocation(program,'stepsize'), 0.023 );
+    gl.uniform2f( gl.getUniformLocation(program,'mn'), knotVector[0], knotVector[1] );
   }
-
+  
   APP.common.loglevel = 1;
   APP.setup("glcanvas");
   APP.core.init();
   APP.core.frame();
+  resize();
+  
+  if(canvas) {
+    canvas.addEventListener("mousedown", touchAndClickHandler);
+    canvas.addEventListener("mousemove", touchAndClickHandler);
+  }
+  window.addEventListener('resize', resize, false);
 }
 </script>
 </body>
