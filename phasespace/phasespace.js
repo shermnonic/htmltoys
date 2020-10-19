@@ -352,17 +352,20 @@ APP.core.init = function() {
 	DEMO.init();	
 	
 	DEMO.setPreset('phasespace');
-
-	// projection matrix
-	mat4.perspective( 45, 4/3, 1, 200, DEMO.mat_proj );	
 }
 
 //------------------------------------------------------------------------------
 //  render()
 //------------------------------------------------------------------------------
 APP.core.render = function() {
-	var gl = APP.core.gl;
+	let gl = APP.core.gl;
+	
+    // projection matrix
+    let aspect = gl.viewportWidth / gl.viewportHeight;
+	mat4.perspective( 45, aspect, 1, 200, DEMO.mat_proj );	
+    
 	var ti = ((APP.time.elapsed*1000) % 1000) / 1000.0;
+	gl.viewport( 0, 0, gl.viewportWidth, gl.viewportHeight );
 	gl.clearColor( DEMO.bgcolor[0], DEMO.bgcolor[1], DEMO.bgcolor[2], 1.0 );
 	gl.clear( gl.COLOR_BUFFER_BIT );
 	
