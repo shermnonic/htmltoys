@@ -146,7 +146,6 @@ APP.engine = {
 	handleTextureLoaded : function( gl, tex ) {
 		gl.bindTexture( gl.TEXTURE_2D, tex );
 		gl.pixelStorei( gl.UNPACK_FLIP_Y_WEBGL, true );
-		console.log('tex',tex);	
 		gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex.image );
 		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR );
 		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR );
