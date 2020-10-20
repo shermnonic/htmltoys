@@ -27,7 +27,13 @@ h1 {
   padding-top: 0.5em;
 }
 .footer {
-  font-size: 80%;
+  font-size: 90%;
+  position: absolute;
+  bottom: 0px;
+  left: 0px;
+  width: 100%;
+  text-align: center;
+  background-color: #fff;
 }
 canvas { /* https://belenalbeza.com/retro-crisp-pixel-art-in-html-5-games/ */
   image-rendering: -moz-crisp-edges;
@@ -81,6 +87,13 @@ transition: 0.5s;
   justify-content: center;
   text-align: left;
 }
+
+#minibar {
+  position: fixed;
+  right: 5px;
+  top: 5px;
+}
+
 </style>
 </head>
 <body onresize="resize()">
@@ -97,14 +110,17 @@ transition: 0.5s;
   </div>
     <div>
       <input id="slider" type="range"  min="0" max="2048" step="8" value="0">
-    <!--<input id="spin"   type="number" min="0" max="2048" step="1" value="0">-->
+      <input id="spin"   type="number" min="0" max="2048" step="1" value="0" style="text-align: center;">
     </div>
-    <div>
-      <a href="#" id="permalink">[permalink w/ current settings]</a>
+    <div style="text-align: right">
+      <a href="#" id="permalink">[permalink]</a>
     </div>
   <canvas id="canvas" width="128" height="128"></canvas>
-  <footer class="footer">by <a href="http://www.386dx25.de">386dx25.de</a>, 2016</footer>
+  <div id="minibar">
+    <button onclick="toggleFullscreen()"><svg width="16" height="16" viewBox="0 0 24 24"><path class="foo" d="M24 9h-2v-7h-7v-2h9v9zm-9 15v-2h7v-7h2v9h-9zm-15-9h2v7h7v2h-9v-9zm9-15v2h-7v7h-2v-9h9z"/></svg></button>
+  </div>
 </div>
+<footer class="footer">by <a href="http://www.386dx25.de">386dx25.de</a>, 2016</footer>
 <script>
 var canvas     = document.getElementById('canvas');
 var background = document.getElementById('background');
@@ -162,7 +178,6 @@ function parse_query_string() {
   if(con_in) con = con_in;
   if(data_in) {
     let k = kernel_from_string(data_in);
-    console.log(k);
     if(k)
       set_kernel_data(k);
     else
@@ -173,7 +188,7 @@ function parse_query_string() {
 function update_permalink() {
   if(permalink) {
     let query_string = '?' + 'kernel=' + kernel_name + '&con=' + con;
-    if( kernel_name==='data' ) 
+    if( kernel_name==='data' || kernel_name==='random') 
       query_string += '&data=' + kernel_to_string(kernel);
     permalink.href = '//' + location.host + location.pathname + query_string;
   }
@@ -205,7 +220,6 @@ function update_kernel() {
 }
 
 function set_kernel_data( k ) {
-  console.log(k);
   if(k && k.length == kernel.length)
     for(var i=0; i < kernel.length; ++i)
       kernel[i] = k[i];
@@ -267,8 +281,9 @@ function init() {
   
   if( spin ) {
     spin.oninput = function() {
-        con = +this.value;
-        update_permalink();
+      con = +this.value;
+      update_permalink();
+      if(slider) slider.value = con;
     }
     spin.value = con;
   }
@@ -317,6 +332,50 @@ function resize() {
   }
   draw();
 }
+
+
+var fullscreen = false;
+
+function requestFullscreen( elem ) {
+  if (!elem) return;
+  if (elem.requestFullscreen) {
+    elem.requestFullscreen();
+    fullscreen = true;
+  } else if (elem.mozRequestFullScreen) {
+    elem.mozRequestFullScreen();
+    fullscreen = true;
+  } else if (elem.webkitRequestFullscreen) {
+    elem.webkitRequestFullscreen();
+    fullscreen = true;
+  } else if (elem.msRequestFullscreen) {
+    elem.msRequestFullscreen();
+    fullscreen = true;
+  }
+}
+
+function exitFullscreen() {
+  if (document.exitFullscreen) {
+    document.exitFullscreen();
+    fullscreen = false;
+  } else if (document.mozCancelFullScreen) {
+    document.mozCancelFullScreen();
+    fullscreen = false;
+  } else if (document.webkitExitFullscreen) {
+    document.webkitExitFullscreen();
+    fullscreen = false;
+  } else if (document.msExitFullscreen) {
+    document.msExitFullscreen();
+    fullscreen = false;
+  }
+}
+
+function toggleFullscreen() {
+  if(fullscreen)
+    exitFullscreen();
+  else
+    requestFullscreen(document.documentElement);
+}
+
 
 function update() {
   // http://codetheory.in/controlling-the-frame-rate-with-requestanimationframe/
