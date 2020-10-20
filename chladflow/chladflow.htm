@@ -140,9 +140,12 @@ canvas {
 </head>
 <body onresize="resize()">
 <h1 style="margin-bottom:0pt;">Chladni flower</h1>
-<canvas id="glcanvas" width="320" height="320"></canvas>
 <div><span id="knotInfo"></span></div>
-<div style="position: absolute; top: 0; right: 0; color:#aaa"><input size="2" id="framerate" style="border: 0; text-align: right; color:#aaa"> fps</div>
+<canvas id="glcanvas" width="320" height="320"></canvas>
+<div style="position: fixed; top: 5px; right: 5px; color:#aaa">
+  <input size="2" id="framerate" style="border: 0; text-align: right; color:#aaa"> fps
+  <button onclick="toggleFullscreen()"><svg width="16" height="16" viewBox="0 0 24 24"><path class="foo" d="M24 9h-2v-7h-7v-2h9v9zm-9 15v-2h7v-7h2v9h-9zm-15-9h2v7h7v2h-9v-9zm9-15v2h-7v7h-2v-9h9z"/></svg></button>
+</div>
 <div><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2019</p></div>
 <script>
 var canvas = document.getElementById("glcanvas");
@@ -157,6 +160,50 @@ function resize() {
     updateKnotInfo();
   }
 }
+
+
+var fullscreen = false;
+
+function requestFullscreen( elem ) {
+  if (!elem) return;
+  if (elem.requestFullscreen) {
+    elem.requestFullscreen();
+    fullscreen = true;
+  } else if (elem.mozRequestFullScreen) {
+    elem.mozRequestFullScreen();
+    fullscreen = true;
+  } else if (elem.webkitRequestFullscreen) {
+    elem.webkitRequestFullscreen();
+    fullscreen = true;
+  } else if (elem.msRequestFullscreen) {
+    elem.msRequestFullscreen();
+    fullscreen = true;
+  }
+}
+
+function exitFullscreen() {
+  if (document.exitFullscreen) {
+    document.exitFullscreen();
+    fullscreen = false;
+  } else if (document.mozCancelFullScreen) {
+    document.mozCancelFullScreen();
+    fullscreen = false;
+  } else if (document.webkitExitFullscreen) {
+    document.webkitExitFullscreen();
+    fullscreen = false;
+  } else if (document.msExitFullscreen) {
+    document.msExitFullscreen();
+    fullscreen = false;
+  }
+}
+
+function toggleFullscreen() {
+  if(fullscreen)
+    exitFullscreen();
+  else
+    requestFullscreen(document.documentElement);
+}
+
 
 function updateKnotInfo() {
   var info = document.getElementById("knotInfo");

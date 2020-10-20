@@ -21,8 +21,12 @@ html, body {
 </style>
 </head>
 <body>
-<h1>sinescans2</h1>
+<h1 style="margin-bottom:0pt;">sinescans2</h1>
+<div><span id="funcInfo"></span></div>
 <canvas id="canvas" width="128" height="128"></canvas>
+<div style="position: fixed; top: 5px; right: 5px; color:#aaa">
+  <button onclick="toggleFullscreen()"><svg width="16" height="16" viewBox="0 0 24 24"><path class="foo" d="M24 9h-2v-7h-7v-2h9v9zm-9 15v-2h7v-7h2v9h-9zm-15-9h2v7h7v2h-9v-9zm9-15v2h-7v7h-2v-9h9z"/></svg></button>
+</div>
 <div><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2020</p></div>
 <script>
 const canvas = document.getElementById('canvas');
@@ -46,6 +50,22 @@ function fmod(a,b) { return (a - (Math.floor(a / b) * b)); };
 
 function powinvtent(x,a) {
     return 1.0-Math.pow(Math.abs(fmod(x,2.0)-1.0),a);
+}
+
+function updateFuncInfo() {
+  var info = document.getElementById("funcInfo");
+  if(info) {
+    names = [
+    'fancy function 1',
+    'fancy function 2',
+    'tent',
+    'Bessel',
+    'Gaussian',
+    'plasma',
+    'saddle',
+    'sigmoid'];
+    info.innerHTML = names[currentFunc];
+  }
 }
 
 var funcs = [
@@ -217,6 +237,7 @@ function updateAnimation( dt ) {
   
   if( !transition.update(time) ) {
     currentFunc = transition.toIndex;
+    updateFuncInfo();
   }
 }
 
@@ -240,9 +261,53 @@ function update(timestamp) {
   tlast = timestamp;
 }  
 
+updateFuncInfo();
 canvas.addEventListener("click", onClick, true);
 window.requestAnimationFrame(update);
 
+
+
+var fullscreen = false;
+
+function requestFullscreen( elem ) {
+  if (!elem) return;
+  if (elem.requestFullscreen) {
+    elem.requestFullscreen();
+    fullscreen = true;
+  } else if (elem.mozRequestFullScreen) {
+    elem.mozRequestFullScreen();
+    fullscreen = true;
+  } else if (elem.webkitRequestFullscreen) {
+    elem.webkitRequestFullscreen();
+    fullscreen = true;
+  } else if (elem.msRequestFullscreen) {
+    elem.msRequestFullscreen();
+    fullscreen = true;
+  }
+}
+
+function exitFullscreen() {
+  if (document.exitFullscreen) {
+    document.exitFullscreen();
+    fullscreen = false;
+  } else if (document.mozCancelFullScreen) {
+    document.mozCancelFullScreen();
+    fullscreen = false;
+  } else if (document.webkitExitFullscreen) {
+    document.webkitExitFullscreen();
+    fullscreen = false;
+  } else if (document.msExitFullscreen) {
+    document.msExitFullscreen();
+    fullscreen = false;
+  }
+}
+
+function toggleFullscreen() {
+  if(fullscreen)
+    exitFullscreen();
+  else
+    requestFullscreen(document.documentElement);
+}
 </script>
 </body>
 </html>
