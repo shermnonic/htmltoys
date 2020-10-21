@@ -9,8 +9,8 @@
 - [ ] try to make progressive web app (e.g. with pixeldisco)
     - [ ] add manifest file
     - [ ] consider webworkers (?)
-- [ ] add fullscreen button
-- [ ] add function labels to sinescans2
+- [X] add fullscreen button
+- [X] add function labels to sinescans2
 - [ ] document sinescans2 ui somehow (e.g. show ui icons like arrows on hover, show circle symbol for each function with current one highlighted, etc.)
 - [ ] make serendipitous mobile friendly
     - [ ] add sliders for parameters
