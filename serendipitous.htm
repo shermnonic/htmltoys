@@ -15,15 +15,20 @@ body {
   max-width: 512px;
   max-height: 512px;
 }
+input[type=number]::-webkit-inner-spin-button { 
+  opacity: 1
+}
 </style>
 </head>
 <body>
 <h1>Serendipitous circles</h1>
 <div>
-    x=<input id="x0" type="number" min="0" max="4096" step="1" value="0">
-    y=<input id="y0" type="number" min="0" max="4096" step="1" value="0">
-    a=<input id="a" type="number" min="0" max="16" step="1" value="0">
-    b=<input id="b" type="number" min="0" max="16" step="1" value="0">
+    <!--x=<input id="x0" type="number" min="0" max="4096" step="1" value="0">
+    y=<input id="y0" type="number" min="0" max="4096" step="1" value="0">-->
+    x<input id="x0" type="range"  min="0" max="4096" step="1" value="0" style="width: 80%"><br/>
+    y<input id="y0" type="range"  min="0" max="4096" step="1" value="0" style="width: 80%"><br/>
+    a=<button onclick="addDelta('a',-0.01)">-</button><input id="a" type="number" min="0" max="16" step="0.01" value="0"><button onclick="addDelta('a',0.01)">+</button>
+    b=<button onclick="addDelta('b',-0.01)">-</button><input id="b" type="number" min="0" max="16" step="0.01" value="0"><button onclick="addDelta('b',0.01)">+</button>
     <br />
     n=<input id="n" type="number" min="0" max="131072" step="1" value="0">
     <!--<input id="update" type="button" value="Update">-->
@@ -179,6 +184,26 @@ function update() {
   updateUI();
 }
 
+var id2param = new Map();
+id2param.set('x0', 0);
+id2param.set('y0', 1);
+id2param.set('a', 2);
+id2param.set('b', 3);
+
+function addDelta(id, delta) {
+  let el = document.getElementById(id);
+  if(el && el.value && id2param.has(id)) {
+    var newval = parseFloat(el.value);
+    newval = newval + delta;
+    console.log(el.value+'+'+delta+'='+newval);
+    if(el.min && newval < el.min) newval = el.min;
+    if(el.max && newval > el.max) newval = el.max;
+    el.value = newval;
+    params[id2param.get(id)] = newval;
+    updateGraphics();
+  }
+}
+
 ui_x0.oninput = function() { params[0] = this.value; updateGraphics(); }
 ui_y0.oninput = function() { params[1] = this.value; updateGraphics(); }
 ui_a.oninput  = function() { params[2] = this.value; updateGraphics(); }
@@ -188,6 +213,8 @@ ui_n.oninput  = function() { numSamples= this.value; updateGraphics(); }
 //var ui_update = document.getElementById('update');  ui_update.onclick = function() { update(); }
 var ui_random = document.getElementById('random');  ui_random.onclick = function() { randomParams(); update(); }
 var ui_reset  = document.getElementById('reset');   ui_reset.onclick  = function() { resetParams(); update(); }
+
+presetParam(5);
 
 updateUI();
 update();
