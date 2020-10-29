@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="mnemonic@386dx25.de">
+<style>
+body { 
+  font-size: 42pt; 
+  word-wrap: break-word;
+  font-family: monospace;
+  transform: scale(1, 0.5);
+  transform-origin: top left; 
+}
+</style>
+<div id="foo">10PRINT<br></div>
+<script>
+var foo = document.getElementById("foo");
+function bar() {
+  foo.innerHTML += String.fromCharCode(9585 + (Math.random()<0.5));
+  foo.scrollIntoView(false);
+}
+setInterval(bar, 10);
+</script>
+</body>
+</html>
