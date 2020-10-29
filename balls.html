@@ -61,6 +61,14 @@ var ball = {
     }  
   },
   
+  targetAt: function(x,y) {
+    const dx = (x - this.pos[0]);
+    const dy = (y - this.pos[1]);
+    const s = Math.min(0.00001*Math.sqrt(dx*dx + dy*dy), 0.001);
+    this.vel[0] = s*dx;
+    this.vel[1] = s*dy;
+  },
+  
   draw: function(canvas,context) {
     context.beginPath();
     context.fillStyle = 'hsl(' + this.hue + ',100%,50%)';
@@ -74,7 +82,7 @@ var ball = {
 };
 
 function resize() {
-  const new_size = [ Math.min( window.innerWidth, 640 ), Math.min( window.innerHeight, 480 ) ]; // or full window: [ window.innerWidth, window.innerHeight ];
+  const new_size = [ window.innerWidth, window.innerHeight ]; //[ Math.min( window.innerWidth, 640 ), Math.min( window.innerHeight, 480 ) ];
   const resize_needed = new_size[0] != screen.canvas.width || new_size[1] != screen.canvas.height;
   if (resize_needed) {
     [screen].concat(buffers).forEach( function(buf){
@@ -106,7 +114,27 @@ function update(timestamp) {
     window.requestAnimationFrame(update);
 }
 
+function getPositionInCanvas(canvas, e, c) {        
+    var rect = canvas.getBoundingClientRect(e);
+    return {
+        x: (c.clientX - rect.left) * (canvas.width / rect.width),
+        y: (c.clientY - rect.top) * (canvas.height / rect.height)
+    }
+}
+
+function touchAndClickHandler(e) {
+    var pos = getPositionInCanvas(screen.canvas, e, e.touches ? e.touches[0] : e);
+    console.log(pos);
+    //e.preventDefault();
+    
+    ball.targetAt(pos.x, pos.y);
+}
+
 resize();
+screen.canvas.addEventListener("touchstart", touchAndClickHandler);
+screen.canvas.addEventListener("touchmove", touchAndClickHandler);
+screen.canvas.addEventListener("mousedown", touchAndClickHandler);
+//screen.canvas.addEventListener("mousemove", touchAndClickHandler);
 window.addEventListener('resize', resize, false);
 window.requestAnimationFrame(update); // consider setInterval() to get rid of timing code above
 </script>
