@@ -124,9 +124,7 @@ function getPositionInCanvas(canvas, e, c) {
 
 function touchAndClickHandler(e) {
     var pos = getPositionInCanvas(screen.canvas, e, e.touches ? e.touches[0] : e);
-    console.log(pos);
-    //e.preventDefault();
-    
+    e.preventDefault();
     ball.targetAt(pos.x, pos.y);
 }
 
