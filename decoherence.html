@@ -38,11 +38,11 @@ function Arrow(pos) {
   this.pos = pos;
   this.theta = Math.random()*2.0*Math.PI;
   this.microTargetTheta = 0.0;
-  this.amplitude = (13.0*Math.PI/180.0);
-  this.speed = 0.03; // rad per ms
+  this.amplitude = (30.0*Math.PI/180.0);
+  this.speed = 0.01; // rad per ms
   
   this.setTheta = function(fixedTheta) {
-    this.theta = fixedTheta;
+    //this.theta = fixedTheta;
     this.microTargetTheta = fixedTheta;
   };
   
@@ -81,31 +81,37 @@ var vectorfield = {
     for(let a of this.arrows) a.update(dt);
   },
   
-  orient : function(targetPos, towards) {
+  orient : function(targetPos, flipped) {
     for(let a of this.arrows) {
       const dir = normalize([targetPos[0] - a.pos[0], targetPos[1] - a.pos[1]]);
-      const theta = Math.acos(dir[1]) * ((dir[0]<0) ? -1 : 1) + (towards ? 0.0 : Math.PI);
+      const theta = Math.acos(dir[1]) * ((dir[0]<0) ? -1 : 1) + (flipped ? a.theta + Math.PI : 0);
       a.setTheta(theta);
     }
+  },
+  
+  flip : function() {
+    console.log("flip");
+    for(let a of this.arrows) a.setTheta( a.theta + Math.PI );
   }
 }
 
 const canvas = document.getElementById('screen');
 const context = canvas.getContext('2d');
-var mod = true;
 
 function touchAndClickHandler(e) {
-    const getPositionInCanvas = function (canvas, e, c) {        
-        var rect = canvas.getBoundingClientRect(e);
-        return {
-            x: (c.clientX - rect.left) * (canvas.width / rect.width),
-            y: (c.clientY - rect.top) * (canvas.height / rect.height)
-        }
-    }
-    const pos = getPositionInCanvas(canvas, e, e.touches ? e.touches[0] : e);
-    e.preventDefault();
-    vectorfield.orient([pos.x, pos.y], mod);
-    mod = !mod;
+  const getPositionInCanvas = function (canvas, e, c) {        
+      var rect = canvas.getBoundingClientRect(e);
+      return {
+          x: (c.clientX - rect.left) * (canvas.width / rect.width),
+          y: (c.clientY - rect.top) * (canvas.height / rect.height)
+      }
+  }
+  const pos = getPositionInCanvas(canvas, e, e.touches ? e.touches[0] : e);
+  e.preventDefault();
+  vectorfield.orient([pos.x, pos.y]);
+  if(e.buttons || (e.touches && e.touches.length>1)) {
+    vectorfield.flip();
+  }
 }
 
 function update(dt) {
@@ -130,5 +136,8 @@ resize();
 setInterval(function() { update(40); }, 40);
 window.addEventListener('resize', resize, false);
 canvas.addEventListener("mousedown", touchAndClickHandler);
+canvas.addEventListener("mousemove", touchAndClickHandler);
+canvas.addEventListener("touchstart", touchAndClickHandler);
+canvas.addEventListener("touchmove", touchAndClickHandler);
 </script>
 </html>
