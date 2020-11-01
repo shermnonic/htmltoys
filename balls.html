@@ -17,13 +17,20 @@ body {
 function DrawBuffer( canvas ) {
   this.canvas = canvas;
   this.context = this.canvas.getContext('2d');
+  
   this.resizeAndClear = function(width, height) {
     this.canvas.width = width;
     this.canvas.height = height;
     this.context.clearRect(0,0,canvas.width,canvas.height);
     this.context.strokeStyle = 'gray';
     this.context.strokeRect(0,0,canvas.width,canvas.height);
-  }
+  };
+  
+  this.slowlyFadeToWhite = function() {
+      this.context.fillStyle = 'rgba(255,255,255, 0.04)';
+      this.context.fillRect(0,0,this.canvas.width,this.canvas.height);      
+      this.context.stroke();
+  };
 }
 
 var buffers = [ new DrawBuffer(document.createElement('canvas')), new DrawBuffer(document.createElement('canvas')) ];
@@ -95,36 +102,39 @@ function resize() {
 let t0;
 let tlast;
 function update(timestamp) {
-    if(t0 === undefined) {
-        t0 = timestamp;
-        tlast = timestamp;
-    }    
-    const dt = timestamp - tlast;
-    if(dt > 40) { // 40ms = 25fps redraw rate
+  if(t0 === undefined) {
+    t0 = timestamp;
+    tlast = timestamp;
+  }    
+  const dt = timestamp - tlast;
+  if(dt > 40) { // 40ms = 25fps redraw rate
+  
+    ball.move(dt);
     
-      ball.move(dt);
+    //buffers[mod].slowlyFadeToWhite();
     
-      ball.draw(buffers[mod].canvas,buffers[mod].context);
-      screen.context.drawImage(buffers[mod].canvas, 0, 0);
-      mod = (mod+1)%2;
-      
-      tlast = timestamp;
-    }
+    ball.draw(buffers[mod].canvas,buffers[mod].context);
+    screen.context.drawImage(buffers[mod].canvas, 0, 0);
+    mod = (mod+1)%2;
     
-    window.requestAnimationFrame(update);
+    tlast = timestamp;
+  }
+  
+  window.requestAnimationFrame(update);
 }
 
 function getPositionInCanvas(canvas, e, c) {        
-    var rect = canvas.getBoundingClientRect(e);
-    return {
-        x: (c.clientX - rect.left) * (canvas.width / rect.width),
-        y: (c.clientY - rect.top) * (canvas.height / rect.height)
-    }
+  var rect = canvas.getBoundingClientRect(e);
+  return {
+    x: (c.clientX - rect.left) * (canvas.width / rect.width),
+    y: (c.clientY - rect.top) * (canvas.height / rect.height)
+  }
 }
 
 function touchAndClickHandler(e) {
-    var pos = getPositionInCanvas(screen.canvas, e, e.touches ? e.touches[0] : e);
-    e.preventDefault();
+  var pos = getPositionInCanvas(screen.canvas, e, e.touches ? e.touches[0] : e);
+  e.preventDefault();
+  if(e.buttons || e.touches)
     ball.targetAt(pos.x, pos.y);
 }
 
@@ -132,7 +142,7 @@ resize();
 screen.canvas.addEventListener("touchstart", touchAndClickHandler);
 screen.canvas.addEventListener("touchmove", touchAndClickHandler);
 screen.canvas.addEventListener("mousedown", touchAndClickHandler);
-//screen.canvas.addEventListener("mousemove", touchAndClickHandler);
+screen.canvas.addEventListener("mousemove", touchAndClickHandler);
 window.addEventListener('resize', resize, false);
 window.requestAnimationFrame(update); // consider setInterval() to get rid of timing code above
 </script>
