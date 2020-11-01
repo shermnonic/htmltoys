@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="mnemonic@386dx25.de">
+<style>
+body {
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  text-align: center;
+}
+</style>
+<canvas id="screen" width="640" height="640"></canvas>
+<script>
+'use strict';
+
+function drawArrow(context, x, y, theta, size) {
+  const c = Math.cos(theta);
+  const s = Math.sin(theta);
+  const h = 0.8 * size / 2.0;
+  //context.save();
+  //context.transform(c, -s, s, c, x, y);
+  context.setTransform(c, -s, s, c, x, y);
+  context.beginPath();
+  context.moveTo(-h/4, -h);
+  context.lineTo(-h/4, h/4);
+  context.lineTo(-3*h/4, h/4);
+  context.lineTo(0, h);
+  context.lineTo(3*h/4, h/4);
+  context.lineTo(h/4, h/4);
+  context.lineTo(h/4, -h);
+  context.closePath();
+  context.stroke();
+  //context.restore();
+}
+
+function Arrow(pos) {
+  this.pos = pos;
+  this.theta = Math.random()*2.0*Math.PI;
+  this.microTargetTheta = 0.0;
+  this.amplitude = (13.0*Math.PI/180.0);
+  this.speed = 0.03; // rad per ms
+  
+  this.setTheta = function(fixedTheta) {
+    this.theta = fixedTheta;
+    this.microTargetTheta = fixedTheta;
+  };
+  
+  this.update = function(dt) {
+    const delta = this.microTargetTheta - this.theta;
+    if(Math.abs(delta) < 0.01) {
+      const direction = (Math.random() < 0.5) ? -1.0 : 1.0;
+      this.microTargetTheta += direction * Math.random()*this.amplitude;
+    } else {
+      this.theta += delta * this.speed * dt;
+    }
+  };
+}
+
+function norm(v) { return Math.sqrt(v[0]*v[0] + v[1]*v[1]); }
+function normalize(v) { const l=norm(v); return [v[0]/l, v[1]/l]; }
+
+var vectorfield = {
+  arrows : [],
+  size : 40,
+  
+  init : function(canvas) {
+    this.arrows = [];
+    for(let row=0; row < canvas.height/this.size+1; ++row) {
+      for(let col=0; col < canvas.width/this.size+1; ++col) {
+        this.arrows.push(new Arrow([col*this.size, row*this.size]));
+      }
+    }
+  },
+  
+  draw : function(context) {
+    for(let a of this.arrows) drawArrow(context, a.pos[0], a.pos[1], a.theta, this.size); 
+  },
+  
+  update : function(dt) {
+    for(let a of this.arrows) a.update(dt);
+  },
+  
+  orient : function(targetPos, towards) {
+    for(let a of this.arrows) {
+      const dir = normalize([targetPos[0] - a.pos[0], targetPos[1] - a.pos[1]]);
+      const theta = Math.acos(dir[1]) * ((dir[0]<0) ? -1 : 1) + (towards ? 0.0 : Math.PI);
+      a.setTheta(theta);
+    }
+  }
+}
+
+const canvas = document.getElementById('screen');
+const context = canvas.getContext('2d');
+var mod = true;
+
+function touchAndClickHandler(e) {
+    const getPositionInCanvas = function (canvas, e, c) {        
+        var rect = canvas.getBoundingClientRect(e);
+        return {
+            x: (c.clientX - rect.left) * (canvas.width / rect.width),
+            y: (c.clientY - rect.top) * (canvas.height / rect.height)
+        }
+    }
+    const pos = getPositionInCanvas(canvas, e, e.touches ? e.touches[0] : e);
+    e.preventDefault();
+    vectorfield.orient([pos.x, pos.y], mod);
+    mod = !mod;
+}
+
+function update(dt) {
+  vectorfield.update(dt);
+
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0,0,canvas.width,canvas.height);
+  context.fillStyle = 'rgb(255,255,255)';  
+  context.strokeStyle = 'rgb(0,0,0)';  
+  vectorfield.draw(context);
+}
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  vectorfield.init(canvas);
+  vectorfield.orient([canvas.width/2.0, canvas.height/2.0], true);  
+  vectorfield.draw(context);
+}
+
+resize();
+setInterval(function() { update(40); }, 40);
+window.addEventListener('resize', resize, false);
+canvas.addEventListener("mousedown", touchAndClickHandler);
+</script>
+</html>
