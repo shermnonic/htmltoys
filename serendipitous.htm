@@ -3,7 +3,7 @@
 <html lang="en">
 <head><meta charset="utf-8"/>
 <title>Serendipitous circles</title>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="viewport" content="width=device-width, initial-scale=2"/>
 <meta name="author" content="386dx26, mnemonic@386dx25.de"/>
 <style>
 body {
@@ -14,6 +14,7 @@ body {
   height: auto;
   max-width: 512px;
   max-height: 512px;
+  visibility: hidden;
 }
 input[type=number]::-webkit-inner-spin-button { 
   opacity: 1
@@ -173,10 +174,18 @@ function updateUI() {
   ui_n.value  = numSamples;
 }
 
+function updateBackground() {
+  var dataURL = canvas.toDataURL();
+  var body = document.getElementsByTagName('body')[0];
+  if(body&&dataURL)
+    body.style.backgroundImage = 'url(' + dataURL + ')';
+}
+
 function updateGraphics() {
   clear();
   drawSerendipitousCircle( params[0],params[1], params[2],params[3], 0xFFFF, numSamples );
   updateCanvas();
+  updateBackground();
 }
 
 function update() {
