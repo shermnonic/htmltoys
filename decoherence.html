@@ -65,6 +65,7 @@ var vectorfield = {
   size : 40,
   
   init : function(canvas) {
+    this.size = Math.min(Math.max(Math.max(canvas.width,canvas.height)/40,30),50);
     this.arrows = [];
     for(let row=0; row < canvas.height/this.size+1; ++row) {
       for(let col=0; col < canvas.width/this.size+1; ++col) {
@@ -90,7 +91,6 @@ var vectorfield = {
   },
   
   flip : function() {
-    console.log("flip");
     for(let a of this.arrows) a.setTheta( a.theta + Math.PI );
   }
 }
@@ -99,7 +99,7 @@ const canvas = document.getElementById('screen');
 const context = canvas.getContext('2d');
 
 function touchAndClickHandler(e) {
-  const getPositionInCanvas = function (canvas, e, c) {        
+  const getPositionInCanvas = function (canvas, e, c) {
       var rect = canvas.getBoundingClientRect(e);
       return {
           x: (c.clientX - rect.left) * (canvas.width / rect.width),
@@ -128,7 +128,7 @@ function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   vectorfield.init(canvas);
-  vectorfield.orient([canvas.width/2.0, canvas.height/2.0], true);  
+  vectorfield.orient([canvas.width/2.0, canvas.height/2.0], true);
   vectorfield.draw(context);
 }
 
@@ -137,7 +137,7 @@ setInterval(function() { update(40); }, 40);
 window.addEventListener('resize', resize, false);
 canvas.addEventListener("mousedown", touchAndClickHandler);
 canvas.addEventListener("mousemove", touchAndClickHandler);
-canvas.addEventListener("touchstart", touchAndClickHandler);
-canvas.addEventListener("touchmove", touchAndClickHandler);
+canvas.addEventListener("touchstart", touchAndClickHandler, { passive: false });
+canvas.addEventListener("touchmove", touchAndClickHandler, { passive: false });
 </script>
 </html>
