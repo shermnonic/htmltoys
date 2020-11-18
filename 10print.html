@@ -4,11 +4,16 @@
 <meta name="author" content="mnemonic@386dx25.de">
 <style>
 body { 
-  font-size: 42pt; 
-  word-wrap: break-word;
+  font-size: 5vw; 
+  word-break: break-all;
+  overflow-wrap: anywhere;
   font-family: monospace;
-  transform: scale(1, 0.5);
-  transform-origin: top left; 
+}
+@media screen and (min-width: 600px) {
+    body { 
+      transform: scale(1, 0.5);
+      transform-origin: top left; 
+    }
 }
 </style>
 <div id="foo">10PRINT<br></div>
@@ -18,7 +23,7 @@ function bar() {
   foo.innerHTML += String.fromCharCode(9585 + (Math.random()<0.5));
   foo.scrollIntoView(false);
 }
-setInterval(bar, 10);
+setInterval(bar, 23);
 </script>
 </body>
 </html>
