@@ -15,13 +15,13 @@
 - [ ] document sinescans2 ui somehow (e.g. show ui icons like arrows on hover, show circle symbol for each function with current one highlighted, etc.)
 - [X] make serendipitous mobile friendly
     - [X] add sliders for parameters
-    - [ ] zoom pixel canvas
+    - [X] --zoom pixel canvas-- fill background with canvas
 - [ ] add phasespace live audio
 - [ ] choose nice colors for chladni flower
 - [ ] pimp the front page
     - [ ] larger images
     - [ ] brief description (idea, motivation, links)
-    - [ ] add front-page icons for bouncing ball and 10print
+    - [X] add front-page icons for bouncing ball and 10print
 - [ ] refactor old DEMO APP WebGL stuff into minimalistic single file js, transition to WebGL2
 - [ ] compute shading texture for phasespace from scratch, thereby getting rid of a jpg dependency
 - [X] add bouncing ball toy
