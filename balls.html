@@ -14,6 +14,11 @@ body {
 <script>
 'use strict';
 
+const style = 'rainbow'; // bw, rainbow, nmi
+const mode = 'linear'; // linear, clelia
+
+// inspired by Jump frmo Public NMI (1992) - http://www.pouet.net/prod.php?which=4210
+
 function DrawBuffer( canvas ) {
   this.canvas = canvas;
   this.context = this.canvas.getContext('2d');
@@ -24,6 +29,11 @@ function DrawBuffer( canvas ) {
     this.context.clearRect(0,0,canvas.width,canvas.height);
     this.context.strokeStyle = 'gray';
     this.context.strokeRect(0,0,canvas.width,canvas.height);
+    
+    if(style=='nmi') {
+      this.context.fillStyle = 'black';
+      this.context.fillRect(0,0,canvas.width,canvas.height);
+    }
   };
   
   this.slowlyFadeToWhite = function() {
@@ -33,7 +43,11 @@ function DrawBuffer( canvas ) {
   };
 }
 
-var buffers = [ new DrawBuffer(document.createElement('canvas')), new DrawBuffer(document.createElement('canvas')) ];
+const numBuffers=3;
+var buffers = [];
+for(let i=0; i < numBuffers; ++i)
+    buffers[i] = new DrawBuffer(document.createElement('canvas'));
+
 var screen = new DrawBuffer(document.getElementById('screen'));
 var mod = 0; // current buffer rendered to
 
@@ -45,12 +59,46 @@ var ball = {
   bounds : [0,0, 100,100], // set in reset()
   
   reset : function(width, height) {
+    this.radius = Math.min(width,height) * 0.042;
     this.bounds = [this.radius, this.radius, width - this.radius, height - this.radius];
     this.pos[0] = Math.floor(Math.random() * width-2*this.radius);
     this.pos[1] = Math.floor(Math.random() * height-2*this.radius);
   },
   
-  move : function(dt) {
+  time : 0.0,
+
+  move : function(dt) { 
+    if(mode=='clelia')
+      this.moveClelia(dt, 1.3); // p=1.3 gives a nice jumble ;-)
+    else // mode=='linear'
+      this.moveLinear(dt); // only moveLinear() supports targetAt() yet
+    //this.moveCircleEuler(dt); // Euler step will diverge of course :-p
+  },  
+
+  moveClelia : function(dt,p) {
+    this.time += dt;
+    let w = this.bounds[2];
+    let h = this.bounds[3];
+    let r = Math.min(w,h)*0.4;
+    let rad_per_msec = 0.0005;
+    let theta = rad_per_msec*this.time;
+    let phi = rad_per_msec*this.time * p;
+    this.pos = [.5*w + r*Math.cos(theta)*Math.cos(phi), 
+                .5*h + r*Math.cos(theta)*Math.sin(phi)]
+  },
+  
+  moveCircleEuler : function(dt) {
+    let w = this.bounds[2];
+    let h = this.bounds[3];
+    let nc = [this.pos[0] - .5*w, this.pos[1] - .5*h];    
+    let s = 0.2/Math.min(w,h);
+    this.vel = [-nc[1]*s, nc[0]*s];
+    
+    for( var d=0; d < 2; ++d )
+      this.pos[d] += dt*this.vel[d];
+  },
+  
+  moveLinear : function(dt) {
     let r = this.radius;
     let boundLo = [ this.bounds[0], this.bounds[1] ];
     let boundUp = [ this.bounds[2], this.bounds[3] ];
@@ -68,7 +116,7 @@ var ball = {
     }  
   },
   
-  targetAt: function(x,y) {
+  targetAt : function(x,y) {
     const dx = (x - this.pos[0]);
     const dy = (y - this.pos[1]);
     const s = Math.min(0.00001*Math.sqrt(dx*dx + dy*dy), 0.001);
@@ -76,12 +124,27 @@ var ball = {
     this.vel[1] = s*dy;
   },
   
-  draw: function(canvas,context) {
+  draw : function(canvas,context) {
     context.beginPath();
-    context.fillStyle = 'hsl(' + this.hue + ',100%,50%)';
+    
+    context.strokeStyle = 'white';
+    if(style=='bw') {
+      context.fillStyle = 'black'; //'hsl(' + this.hue + ',100%,50%)';
+    } else if(style=='nmi') {
+      let radialGradient = context.createRadialGradient(
+        this.pos[0]+this.radius*0.2, this.pos[1]-this.radius*0.2, this.radius*0.1, 
+        this.pos[0], this.pos[1], this.radius );
+      radialGradient.addColorStop(0, "#f49cf4"); //f254f2
+      radialGradient.addColorStop(1, "#630c63"); //681168
+      context.fillStyle = radialGradient;
+      context.strokeStyle = 'black';
+    } else { // 'rainbow'
+      context.fillStyle = 'hsl(' + this.hue + ',100%,50%)';
+    }
+    
     context.arc(this.pos[0], this.pos[1], this.radius, 0, 2*Math.PI, false);
     context.fill();
-    context.strokeStyle = 'gray';
+    context.lineWidth = 2;
     context.stroke();
     
     this.hue = (this.hue+10) % 360;
@@ -115,7 +178,7 @@ function update(timestamp) {
     
     ball.draw(buffers[mod].canvas,buffers[mod].context);
     screen.context.drawImage(buffers[mod].canvas, 0, 0);
-    mod = (mod+1)%2;
+    mod = (mod+1)%numBuffers;
     
     tlast = timestamp;
   }
