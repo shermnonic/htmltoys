@@ -1,5 +1,8 @@
 <!DOCTYPE html>
+<!-- www.386dx25.de 2020 -->
 <html>
+<head><meta charset="utf-8"/>
+<title>balls</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="author" content="mnemonic@386dx25.de">
 <style>
@@ -10,14 +13,32 @@ body {
   text-align: center;
 }
 </style>
+</head>
+</body>
+<div style="position: absolute; left:5px; top:5px;">
+  <a href="?style=rainbow&mode=linear">hue</a>
+  <a href="?style=bw&mode=clelia">bw</a>
+  <a href="?style=nmi&mode=nmi">nmi</a>
+</div>
 <canvas id="screen"></canvas>
 <script>
 'use strict';
 
-const style = 'rainbow'; // bw, rainbow, nmi
-const mode = 'linear'; // linear, clelia
+var style = 'rainbow'; // bw, rainbow, nmi
+var mode = 'linear'; // linear, clelia
 
-// inspired by Jump frmo Public NMI (1992) - http://www.pouet.net/prod.php?which=4210
+function parse_query_string() {
+  // parse url parameters
+  let params = new URLSearchParams(document.location.search.substring(1));
+  let style_ = params.get('style');
+  let mode_ = params.get('mode');
+  if(style_) style = style_;
+  if(mode_) mode = mode_;
+}
+
+parse_query_string();
+
+// inspired by Jump from Public NMI (1992) - http://www.pouet.net/prod.php?which=4210, https://youtu.be/DNpw4xrR_Bc?t=28
 
 function DrawBuffer( canvas ) {
   this.canvas = canvas;
@@ -38,7 +59,7 @@ function DrawBuffer( canvas ) {
   
   this.slowlyFadeToWhite = function() {
       this.context.fillStyle = 'rgba(255,255,255, 0.04)';
-      this.context.fillRect(0,0,this.canvas.width,this.canvas.height);      
+      this.context.fillRect(0,0,this.canvas.width,this.canvas.height);
       this.context.stroke();
   };
 }
@@ -50,6 +71,16 @@ for(let i=0; i < numBuffers; ++i)
 
 var screen = new DrawBuffer(document.getElementById('screen'));
 var mod = 0; // current buffer rendered to
+
+var Lissajou = {
+  a : [1.,1.],
+  A : [1.,1.],
+  delta : .5*Math.PI,
+  eval : function(t) {
+    return [this.A[0]*Math.sin(t * this.a[0]+this.delta),
+            this.A[1]*Math.sin(t * this.a[1])];
+  }
+};
 
 var ball = {
   radius : 23,
@@ -70,12 +101,14 @@ var ball = {
   move : function(dt) { 
     if(mode=='clelia')
       this.moveClelia(dt, 1.3); // p=1.3 gives a nice jumble ;-)
+    else if(mode=='nmi')
+      this.moveNMI(dt);
     else // mode=='linear'
       this.moveLinear(dt); // only moveLinear() supports targetAt() yet
     //this.moveCircleEuler(dt); // Euler step will diverge of course :-p
   },  
 
-  moveClelia : function(dt,p) {
+  moveClelia : function(dt, p) {
     this.time += dt;
     let w = this.bounds[2];
     let h = this.bounds[3];
@@ -84,13 +117,30 @@ var ball = {
     let theta = rad_per_msec*this.time;
     let phi = rad_per_msec*this.time * p;
     this.pos = [.5*w + r*Math.cos(theta)*Math.cos(phi), 
-                .5*h + r*Math.cos(theta)*Math.sin(phi)]
+                .5*h + r*Math.cos(theta)*Math.sin(phi)];
+  },
+  
+  moveNMI : function(dt) {
+    this.time += dt;
+    let w = this.bounds[2];
+    let h = this.bounds[3];
+    let r = Math.min(w,h)*0.4;
+    let rad_per_msec = 0.0006;
+    let theta = rad_per_msec*this.time;
+    if(w/h > 1.)
+      Lissajou.A = [w/h, 1.];
+    else
+      Lissajou.A = [1., h/w];
+    Lissajou.delta = Math.PI-Math.PI*Math.cos((theta+2*Math.PI)/(23*Math.PI));
+    let l = Lissajou.eval(theta);
+    this.pos = [.5*w + r*l[0],
+                .5*h + r*l[1]];
   },
   
   moveCircleEuler : function(dt) {
     let w = this.bounds[2];
     let h = this.bounds[3];
-    let nc = [this.pos[0] - .5*w, this.pos[1] - .5*h];    
+    let nc = [this.pos[0] - .5*w, this.pos[1] - .5*h];
     let s = 0.2/Math.min(w,h);
     this.vel = [-nc[1]*s, nc[0]*s];
     
@@ -186,7 +236,7 @@ function update(timestamp) {
   window.requestAnimationFrame(update);
 }
 
-function getPositionInCanvas(canvas, e, c) {        
+function getPositionInCanvas(canvas, e, c) {
   var rect = canvas.getBoundingClientRect(e);
   return {
     x: (c.clientX - rect.left) * (canvas.width / rect.width),
@@ -209,4 +259,5 @@ screen.canvas.addEventListener("mousemove", touchAndClickHandler);
 window.addEventListener('resize', resize, false);
 window.requestAnimationFrame(update); // consider setInterval() to get rid of timing code above
 </script>
+</body>
 </html>
