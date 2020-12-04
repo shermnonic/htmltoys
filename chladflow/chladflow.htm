@@ -143,10 +143,24 @@ html, body {
   height: 100%;
   margin: 0;
   text-align: center;
+  // https://www.arungudelli.com/tutorial/css/disable-text-selection-in-html-using-user-select-css-property/
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
-canvas {
-  margin:0;
-  padding:0;
+#glcanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: -1;
+}
+footer {
+  position: absolute;
+  bottom: 0px;
+  left: 0px;
+  width: 100%;
 }
 </style>
 </head>
@@ -158,18 +172,29 @@ canvas {
   <input size="2" id="framerate" style="border: 0; text-align: right; color:#aaa"> fps
   <button onclick="toggleFullscreen()"><svg width="16" height="16" viewBox="0 0 24 24"><path class="foo" d="M24 9h-2v-7h-7v-2h9v9zm-9 15v-2h7v-7h2v9h-9zm-15-9h2v7h7v2h-9v-9zm9-15v2h-7v7h-2v-9h9z"/></svg></button>
 </div>
-<div><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2019</p></div>
+<footer>by <a href="http://www.386dx25.de">386dx25.de</a>, 2019</footer>
 <script>
 var canvas = document.getElementById("glcanvas");
 var knotVector = [5.0, 3.0];
 
 function resize() {
   if(canvas) {
-    var size = Math.max( 128, Math.min( 768, Math.floor(0.8*Math.min(window.innerWidth, window.innerHeight)) ));
+    const size = Math.max( 128, Math.min( 768, Math.floor(0.8*Math.min(window.innerWidth, window.innerHeight)) ));
     canvas.width = size;
     canvas.height = size;
     APP.setup("glcanvas");
     updateKnotInfo();
+
+    const vertical_layout = window.innerWidth > window.innerHeight;
+    if( vertical_layout ) {
+      canvas.style.width = "auto";
+      canvas.style.height = "100%";
+      canvas.style.left = window.innerWidth/2 - window.innerHeight/2 + "px";
+    } else {
+      canvas.style.width = "100%";
+      canvas.style.height = "auto";
+      canvas.style.top = window.innerHeight/2 - window.innerWidth/2 + "px";
+    }
   }
 }
 
@@ -225,9 +250,9 @@ function updateKnotInfo() {
 }
 
 function touchAndClickHandler(e) {
-  if(APP.mouse.buttonDown[0]) {
-    knotVector[0] = 7.0 * APP.mouse.lastPos[0] / APP.core.gl.viewportWidth;
-    knotVector[1] = 7.0 * APP.mouse.lastPos[1] / APP.core.gl.viewportHeight;
+  if(e.buttons) {
+    knotVector[0] = 7.0 * e.clientX / window.innerWidth;
+    knotVector[1] = 7.0 * e.clientY / window.innerHeight;
     updateKnotInfo();
   }
 }
@@ -244,10 +269,8 @@ window.onload = function() {
   APP.core.frame();
   resize();
   
-  if(canvas) {
-    canvas.addEventListener("mousedown", touchAndClickHandler);
-    canvas.addEventListener("mousemove", touchAndClickHandler);
-  }
+  document.addEventListener("mousedown", touchAndClickHandler);
+  document.addEventListener("mousemove", touchAndClickHandler);
   window.addEventListener('resize', resize, false);
 }
 </script>
