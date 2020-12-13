@@ -36,7 +36,7 @@ input[type=number]::-webkit-inner-spin-button {
     <input id="random" type="button" value="Random">
     <input id="reset"  type="button" value="Reset">
     <br />
-    <a id="download" href="#" download>Download as image</a>
+    <a id="download" href="#" download="serendipitous">Download as image</a>
 </div>
 <canvas id="canvas" width="512" height="512"></canvas>
 <div><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2017</p></div>
@@ -88,8 +88,6 @@ function updateCanvas() {
 }
 
 function drawSerendipitousCircle( x0, y0, a,b, mask, n ) {
-    //console.log("drawSerendipitousCircle("+x0+","+y0+","+a+","+b+","+mask+")");
-
     var x = INT(x0);
     var y = INT(y0);
     
@@ -110,17 +108,17 @@ var params;
 var numSamples = 4096;
 
 function resetParams() {
-  params = [ 100,100, 8,8 ];
+  params = [667  ,39  , 2,2];
   numSamples = 4096;
 }
 
 resetParams();
 
 function randomParams() {
-  params[0] = Math.floor(Math.random()*4*1024); //0xFFFF);
-  params[1] = Math.floor(Math.random()*4*024); //0xFFFF);
-  params[2] = Math.random()*16;
-  params[3] = Math.random()*16;
+  setParam(0, Math.floor(Math.random()*4*1024)); //0xFFFF);
+  setParam(1, Math.floor(Math.random()*4*024)); //0xFFFF);
+  setParam(2, Math.random()*16);
+  setParam(3, Math.random()*16);
 }
 
 var presets =
@@ -141,19 +139,19 @@ var presets =
         [652  ,53  ,16 ,12],
         [888  ,40  ,16 ,16],
         
-        [1581 ,19  ,13.6761684014937 ,3.109404838623010],
-        [1410 ,30  ,5.33938077387224 ,9.684132857211903],
-        [1511 ,10  ,11.5380858021985 ,5.462619158802685],
-        [315  ,45  ,9.70967268477412 ,11.50255892055613],
-        [381  ,65  ,8.96190815713939 ,8.384236965988574],
-        [148  ,62  ,14.1203697116741 ,8.690187091544452],
-        [3665 ,10  ,14.3243592597862 ,12.48387674152859],
-        [2646 ,59  ,4.12503876462789 ,4.443343577681279],
-        [3830 ,24  ,0.56128201719391 ,1.006297675778807],
-        [2134 ,42  ,12.0562004122835 ,6.568503947447102],
-        [2714 ,60  ,14.6757138955930 ,6.300332553715741],
+        [1581 ,19  ,13.6761 ,3.1094],
+        [1410 ,30  ,5.3393  ,9.6841],
+        [1511 ,10  ,11.5380 ,5.4626],
+        [315  ,45  ,9.7096  ,11.5025],
+        [381  ,65  ,8.9619  ,8.3842],
+        [148  ,62  ,14.1203 ,8.6901],
+        [3665 ,10  ,14.3243 ,12.4838],
+        [2646 ,59  ,4.1250  ,4.4433],
+        [3830 ,24  ,0.5612  ,1.0062],
+        [2134 ,42  ,12.0562 ,6.5685],
+        [2714 ,60  ,14.6757 ,6.3003],
         
-        [112,65, 12.815198904573311, 15.713804109024885] ];
+        [112,65, 12.8151, 15.7138] ];
 console.log("Serendipitous circle, "+presets.length+" presets available")
 
 function presetParam( i ) {
@@ -184,8 +182,10 @@ function updateBackground() {
   if(dataURL) {
     if(body)
       body.style.backgroundImage = 'url(' + dataURL + ')';
-    if(downloadLink)
+    if(downloadLink) {
       downloadLink.href = dataURL;
+      downloadLink.download = "serendipitous-a" + params[2] + "-b" + params[3] + ".png";
+    }
   }
 }
 
@@ -212,20 +212,23 @@ function addDelta(id, delta) {
   if(el && el.value && id2param.has(id)) {
     var newval = parseFloat(el.value);
     newval = newval + delta;
-    console.log(el.value+'+'+delta+'='+newval);
     if(el.min && newval < el.min) newval = el.min;
     if(el.max && newval > el.max) newval = el.max;
-    el.value = newval;
-    params[id2param.get(id)] = newval;
-    updateGraphics();
+    el.value = newval.toPrecision(4);
+    setParam(id2param.get(id), newval);
   }
 }
 
-ui_x0.oninput = function() { params[0] = this.value; updateGraphics(); }
-ui_y0.oninput = function() { params[1] = this.value; updateGraphics(); }
-ui_a.oninput  = function() { params[2] = this.value; updateGraphics(); }
-ui_b.oninput  = function() { params[3] = this.value; updateGraphics(); }
-ui_n.oninput  = function() { numSamples= this.value; updateGraphics(); }
+function setParam( id, value ) {
+  params[id] = Number.parseFloat(value).toPrecision(4);
+  updateGraphics();
+}
+
+ui_x0.oninput = function() { setParam(0, this.value); }
+ui_y0.oninput = function() { setParam(1, this.value); }
+ui_a.oninput  = function() { setParam(2, this.value); }
+ui_b.oninput  = function() { setParam(3, this.value); }
+ui_n.oninput  = function() { numSamples= this.value; }
 
 //var ui_update = document.getElementById('update');  ui_update.onclick = function() { update(); }
 var ui_random = document.getElementById('random');  ui_random.onclick = function() { randomParams(); update(); }
