@@ -6,21 +6,43 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="author" content="mnemonic@386dx25.de">
 <style>
+* { /* https://stackoverflow.com/questions/3779534/how-do-i-disable-text-selection-with-css-or-javascript#3779567 */
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+}
 body {
   padding: 0;
   margin: 0;
   overflow: hidden;
-  text-align: center;
+  text-align: center;  
+}
+header {
+  width: 100%;
+  position: absolute;
+  margin: auto;
+}
+footer {
+  width: 100%;
+  position: absolute;
+  bottom: 5px;
+  margin: auto;
 }
 </style>
 </head>
 </body>
-<div style="position: absolute; left:5px; top:5px;">
+<header>
+  <h1>Infinite balls</h1>
   <a href="?style=rainbow&mode=linear">hue</a>
   <a href="?style=bw&mode=clelia">bw</a>
   <a href="?style=nmi&mode=nmi">nmi</a>
-</div>
+</header>
 <canvas id="screen"></canvas>
+<footer>by <a href="http://www.386dx25.de">386dx25.de</a>, 2020</footer>
 <script>
 'use strict';
 
@@ -54,6 +76,7 @@ function DrawBuffer( canvas ) {
     if(style=='nmi') {
       this.context.fillStyle = 'black';
       this.context.fillRect(0,0,canvas.width,canvas.height);
+      document.getElementsByTagName("body")[0].style.color = "white";
     }
   };
   
