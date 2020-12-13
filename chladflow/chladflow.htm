@@ -142,6 +142,7 @@ html, body {
   width:  100%;
   height: 100%;
   margin: 0;
+  overflow: hidden;
   text-align: center;
   // https://www.arungudelli.com/tutorial/css/disable-text-selection-in-html-using-user-select-css-property/
   user-select: none;
@@ -250,9 +251,11 @@ function updateKnotInfo() {
 }
 
 function touchAndClickHandler(e) {
-  if(e.buttons) {
-    knotVector[0] = 7.0 * e.clientX / window.innerWidth;
-    knotVector[1] = 7.0 * e.clientY / window.innerHeight;
+  e.preventDefault();
+  if(e.buttons || e.touches) {
+    let et = e.touches ? e.touches[0] : e;
+    knotVector[0] = 7.0 * et.clientX / window.innerWidth;
+    knotVector[1] = 7.0 * et.clientY / window.innerHeight;
     updateKnotInfo();
   }
 }
@@ -269,6 +272,8 @@ window.onload = function() {
   APP.core.frame();
   resize();
   
+  document.addEventListener("touchstart", touchAndClickHandler);
+  document.addEventListener("touchmove", touchAndClickHandler);
   document.addEventListener("mousedown", touchAndClickHandler);
   document.addEventListener("mousemove", touchAndClickHandler);
   window.addEventListener('resize', resize, false);
