@@ -18,15 +18,12 @@
   min-width: 200px;
 }
 
-.header {
-}
-
-.footer {
+footer {
   font-size: 80%;
-  margin-top: 10px;
+  margin-top: 20px;
 }
 
-.main {
+article {
   text-align: left;
   background: #999;
   color: #fff;
@@ -40,9 +37,9 @@
 }
 
 @media all and (min-width: 800px) {
-  .main    { flex: 3 0px; }
-  .main    { order: 1; }
-  .footer  { order: 2; }
+  article { flex: 3 0px; }
+  article { order: 1; }
+  footer  { order: 2; }
 }
 
 body {
@@ -50,7 +47,7 @@ body {
   font-family: "Verdana", sans-serif;
   font-size: 96%;
   font-weight: lighter;
-  /*background-image: url("img/bg.gif");*/
+  background-image: url("img/serendipitous-a0.6900-b2.350.gr2.gif");
 }
 
 #logo {
@@ -93,6 +90,7 @@ body {
   font-size: 75%;
   align-self: flex-end;
   border-radius: 3px;
+  background: rgba(255,255,255,0.7);
 }
 
 .navigation-item img {
@@ -125,7 +123,10 @@ body {
 
   <body>
     <div class="wrapper">
-      <header class="header"><img id="logo" src="img/386dx25.png"/></header>
+      <header class="header">
+        <img id="logo" src="img/386dx25.png"/>
+        <h1 style="color: #aaa; margin-top: -1em;">&nbsp;&nbsp;&nbsp;&lt;!-- html toys --&gt;</h1>
+      </header>
       <nav>
         <ul class="navigation">
           <li class="navigation-item hover"><a href="pixeldisco.htm">pixeldisco<br/><img src="img/icons/pixeldisco.png"/></a>(2016)</li>
@@ -133,16 +134,16 @@ body {
           <li class="navigation-item hover"><a href="chladflow/chladflow.htm">chladflow<br/><img src="img/icons/chladni-flower.png"/></a>(2019)</li>
           <li class="navigation-item hover"><a href="phasespace/phasespace.html">phasespace<br/><img src="img/icons/phasespace.jpg"/></a>(2013)</li>
           <li class="navigation-item hover"><a href="serendipitous.htm">serendipitous<br/><img src="img/icons/serendipitous.png"/></a>(2017)</li>
-          <li class="navigation-item hover"><a href="10print.html">10PRINT<br/><img src="img/10print.png"/></a></li>
-          <li class="navigation-item hover"><a href="balls.html">balls<br/><img src="img/balls.png"/></a></li>
-          <li class="navigation-item hover"><a href="decoherence.html">decoherence<br/><img src="img/decoherence.png"/></a></li>
+          <li class="navigation-item hover"><a href="balls.html">balls<br/><img src="img/balls.png"/></a>(2020)</li>
+          <li class="navigation-item hover"><a href="10print.html"><br/><img src="img/10print.png"/></a></li>
+          <li class="navigation-item hover"><a href="decoherence.html"><br/><img src="img/decoherence.png"/></a></li>
         </ul>  
       </nav>
-      <article class="main">
+      <article>
       <div class="padding">
       </div>
       </article>
-      <footer class="footer">(c) mnemonic at 386dx25.de, 2020</footer>
+      <footer>made&nbsp;by&nbsp;<a href="https://386dx25.de">386dx25.de</a>&nbsp;2020</footer>
     </div>
   </body>
 </html>
