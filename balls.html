@@ -343,7 +343,7 @@ var InfiniBalls = new function() {
     });
     
     for(var i=0; i < buffers.length; ++i) {
-      console.log('renderGIF() - add buffer '+i);  
+      console.log('renderGIF() - add buffer '+i+'/'+buffers.length);
       gif.addFrame(buffers[i].context, {copy: true, delay: 40});
     }
 
@@ -360,8 +360,8 @@ var InfiniBalls = new function() {
     for(let i=0; i < numBuffers; ++i)
         buffers[i] = new DrawBuffer(document.createElement('canvas'));  
     resize();
-    screen.canvas.addEventListener("touchstart", touchAndClickHandler);
-    screen.canvas.addEventListener("touchmove", touchAndClickHandler);
+    screen.canvas.addEventListener("touchstart", touchAndClickHandler, {passive: true});
+    screen.canvas.addEventListener("touchmove", touchAndClickHandler, {passive: true});
     screen.canvas.addEventListener("mousedown", touchAndClickHandler);
     screen.canvas.addEventListener("mousemove", touchAndClickHandler);
     window.addEventListener('resize', resize, false);
