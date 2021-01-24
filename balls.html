@@ -5,6 +5,7 @@
 <title>balls</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="author" content="mnemonic@386dx25.de">
+<script type="text/javascript" src="3rdparty/gif.js/gif.js"></script>
 <style>
 * { /* https://stackoverflow.com/questions/3779534/how-do-i-disable-text-selection-with-css-or-javascript#3779567 */
   -webkit-touch-callout: none; /* iOS Safari */
@@ -36,10 +37,12 @@ footer {
 </head>
 </body>
 <header>
-  <h1>Infinite balls</h1>
+  <h1>Infiniballs</h1>
   <a href="?style=rainbow&mode=linear">hue</a>
   <a href="?style=bw&mode=clelia">bw</a>
-  <a href="?style=nmi&mode=nmi">nmi</a>
+  <a href="?style=nmi&mode=nmi">nmi</a><br/>
+  <a href="#" id="pause" onclick="togglePause()">pause</a>
+  <a href="#" onclick="renderGIF()">create gif</a>
 </header>
 <canvas id="screen"></canvas>
 <footer>by <a href="http://www.386dx25.de">386dx25.de</a>, 2020</footer>
@@ -69,14 +72,24 @@ function DrawBuffer( canvas ) {
   this.resizeAndClear = function(width, height) {
     this.canvas.width = width;
     this.canvas.height = height;
-    this.context.clearRect(0,0,canvas.width,canvas.height);
+    
     this.context.strokeStyle = 'gray';
     this.context.strokeRect(0,0,canvas.width,canvas.height);
     
     if(style=='nmi') {
+      // Explicitly paint background black
       this.context.fillStyle = 'black';
       this.context.fillRect(0,0,canvas.width,canvas.height);
       document.getElementsByTagName("body")[0].style.color = "white";
+    } else {      
+      // clearRect() for transparent canvas, probably more efficient than fillRect
+      // this.context.clearRect(0,0,canvas.width,canvas.height);
+
+      // however, for gif export we need explicitly filled (white) background
+      // at least as long as gif.js background color property is broken
+      this.context.fillStyle = 'white';
+      this.context.fillRect(0,0,canvas.width,canvas.height);
+      document.getElementsByTagName("body")[0].style.color = "black";      
     }
   };
   
@@ -219,8 +232,6 @@ var ball = {
     context.fill();
     context.lineWidth = 2;
     context.stroke();
-    
-    this.hue = (this.hue+10) % 360;
   }  
 };
 
@@ -235,23 +246,40 @@ function resize() {
   }
 }
 
+var pauseAnimation = false;
+var resetTimestamp = true;
 let t0;
 let tlast;
+let firstFrame = true;
+
 function update(timestamp) {
-  if(t0 === undefined) {
+
+  if(t0 === undefined || resetTimestamp) {
     t0 = timestamp;
     tlast = timestamp;
+    resetTimestamp = false;
   }    
   const dt = timestamp - tlast;
   if(dt > 40) { // 40ms = 25fps redraw rate
-  
-    ball.move(dt);
+
+    if(!pauseAnimation) {
     
-    //buffers[mod].slowlyFadeToWhite();
+      ball.move(dt);
     
-    ball.draw(buffers[mod].canvas,buffers[mod].context);
+      if(firstFrame) {
+        for(var i=0; i < buffers.length; ++i)
+          ball.draw(buffers[i].canvas,buffers[i].context);    
+        firstFrame = false;
+      } else {
+        //buffers[mod].slowlyFadeToWhite();      
+        ball.draw(buffers[mod].canvas,buffers[mod].context);
+      }
+    }
+    
     screen.context.drawImage(buffers[mod].canvas, 0, 0);
     mod = (mod+1)%numBuffers;
+    
+    ball.hue = (ball.hue+10) % 360;
     
     tlast = timestamp;
   }
@@ -273,6 +301,64 @@ function touchAndClickHandler(e) {
   if(e.buttons || e.touches)
     ball.targetAt(pos.x, pos.y);
 }
+
+function pause() {
+  pauseAnimation = true;
+  var el = document.getElementById('pause');
+  if(el) el.innerHTML = 'unpause';  
+}
+
+function unpause() {
+  pauseAnimation = false;
+  resetTimestamp = true;
+  var el = document.getElementById('pause');
+  if(el) el.innerHTML = 'pause';    
+  window.requestAnimationFrame(update);  
+}
+
+function togglePause() {
+  if(!pauseAnimation) {
+    stop();
+  } else {
+    unpause();
+  }
+}
+
+function stop() {  
+  if(!pauseAnimation) {
+    pause();  
+    for(var i=0; i < buffers.length; ++i)    
+      ball.draw(buffers[i].canvas,buffers[i].context);
+  }
+}
+
+function renderGIF() {
+
+  stop();
+  
+  var gif = new GIF({
+    workerScript: '3rdparty/gif.js/gif.worker.js',
+    workers: 4,
+    quality: 10,
+    width: buffers[0].canvas.width, 
+    height: buffers[1].canvas.height,
+    background: '#fff'
+  });
+  
+  console.log(gif);  
+  
+  for(var i=0; i < buffers.length; ++i) {
+    console.log('renderGIF() - add buffer '+i);  
+    gif.addFrame(buffers[i].context, {copy: true, delay: 40});
+  }
+
+  gif.on('finished', function(blob) {
+    window.open(URL.createObjectURL(blob));
+  });
+
+  gif.render();
+}
+
 
 resize();
 screen.canvas.addEventListener("touchstart", touchAndClickHandler);
