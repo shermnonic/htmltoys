@@ -41,332 +41,335 @@ footer {
   <a href="?style=rainbow&mode=linear">hue</a>
   <a href="?style=bw&mode=clelia">bw</a>
   <a href="?style=nmi&mode=nmi">nmi</a><br/>
-  <a href="#" id="pause" onclick="togglePause()">pause</a>
-  <a href="#" onclick="renderGIF()">create gif</a>
+  <a href="#" id="pause" onclick="InfiniBalls.togglePause()">pause</a>
+  <a href="#" onclick="InfiniBalls.renderGIF()">create gif</a>
 </header>
 <canvas id="screen"></canvas>
 <footer>by <a href="http://www.386dx25.de">386dx25.de</a>, 2020</footer>
 <script>
 'use strict';
 
-var style = 'rainbow'; // bw, rainbow, nmi
-var mode = 'linear'; // linear, clelia
+var InfiniBalls = new function() {
 
-function parse_query_string() {
-  // parse url parameters
-  let params = new URLSearchParams(document.location.search.substring(1));
-  let style_ = params.get('style');
-  let mode_ = params.get('mode');
-  if(style_) style = style_;
-  if(mode_) mode = mode_;
-}
+  var style = 'rainbow'; // bw, rainbow, nmi
+  var mode = 'linear'; // linear, clelia
 
-parse_query_string();
+  var parse_query_string = function() {
+    // parse url parameters
+    let params = new URLSearchParams(document.location.search.substring(1));
+    let style_ = params.get('style');
+    let mode_ = params.get('mode');
+    if(style_) style = style_;
+    if(mode_) mode = mode_;
+  }
 
-// inspired by Jump from Public NMI (1992) - http://www.pouet.net/prod.php?which=4210, https://youtu.be/DNpw4xrR_Bc?t=28
+  // inspired by Jump from Public NMI (1992) - http://www.pouet.net/prod.php?which=4210, https://youtu.be/DNpw4xrR_Bc?t=28
 
-function DrawBuffer( canvas ) {
-  this.canvas = canvas;
-  this.context = this.canvas.getContext('2d');
-  
-  this.resizeAndClear = function(width, height) {
-    this.canvas.width = width;
-    this.canvas.height = height;
+  var DrawBuffer = function( canvas ) {
+    this.canvas = canvas;
+    this.context = this.canvas.getContext('2d');
     
-    this.context.strokeStyle = 'gray';
-    this.context.strokeRect(0,0,canvas.width,canvas.height);
-    
-    if(style=='nmi') {
-      // Explicitly paint background black
-      this.context.fillStyle = 'black';
-      this.context.fillRect(0,0,canvas.width,canvas.height);
-      document.getElementsByTagName("body")[0].style.color = "white";
-    } else {      
-      // clearRect() for transparent canvas, probably more efficient than fillRect
-      // this.context.clearRect(0,0,canvas.width,canvas.height);
+    this.resizeAndClear = function(width, height) {
+      this.canvas.width = width;
+      this.canvas.height = height;
+      
+      this.context.strokeStyle = 'gray';
+      this.context.strokeRect(0,0,canvas.width,canvas.height);
+      
+      if(style=='nmi') {
+        // Explicitly paint background black
+        this.context.fillStyle = 'black';
+        this.context.fillRect(0,0,canvas.width,canvas.height);
+        document.getElementsByTagName("body")[0].style.color = "white";
+      } else {      
+        // clearRect() for transparent canvas, probably more efficient than fillRect
+        // this.context.clearRect(0,0,canvas.width,canvas.height);
 
-      // however, for gif export we need explicitly filled (white) background
-      // at least as long as gif.js background color property is broken
-      this.context.fillStyle = 'white';
-      this.context.fillRect(0,0,canvas.width,canvas.height);
-      document.getElementsByTagName("body")[0].style.color = "black";      
+        // however, for gif export we need explicitly filled (white) background
+        // at least as long as gif.js background color property is broken
+        this.context.fillStyle = 'white';
+        this.context.fillRect(0,0,canvas.width,canvas.height);
+        document.getElementsByTagName("body")[0].style.color = "black";      
+      }
+    };
+    
+    this.slowlyFadeToWhite = function() {
+        this.context.fillStyle = 'rgba(255,255,255, 0.04)';
+        this.context.fillRect(0,0,this.canvas.width,this.canvas.height);
+        this.context.stroke();
+    };
+  };
+
+  const numBuffers=3;
+  var buffers = [];
+
+  var screen = new DrawBuffer(document.getElementById('screen'));
+  var mod = 0; // current buffer rendered to
+
+  var Lissajou = {
+    a : [1.,1.],
+    A : [1.,1.],
+    delta : .5*Math.PI,
+    eval : function(t) {
+      return [this.A[0]*Math.sin(t * this.a[0]+this.delta),
+              this.A[1]*Math.sin(t * this.a[1])];
     }
   };
-  
-  this.slowlyFadeToWhite = function() {
-      this.context.fillStyle = 'rgba(255,255,255, 0.04)';
-      this.context.fillRect(0,0,this.canvas.width,this.canvas.height);
-      this.context.stroke();
-  };
-}
 
-const numBuffers=3;
-var buffers = [];
-for(let i=0; i < numBuffers; ++i)
-    buffers[i] = new DrawBuffer(document.createElement('canvas'));
-
-var screen = new DrawBuffer(document.getElementById('screen'));
-var mod = 0; // current buffer rendered to
-
-var Lissajou = {
-  a : [1.,1.],
-  A : [1.,1.],
-  delta : .5*Math.PI,
-  eval : function(t) {
-    return [this.A[0]*Math.sin(t * this.a[0]+this.delta),
-            this.A[1]*Math.sin(t * this.a[1])];
-  }
-};
-
-var ball = {
-  radius : 23,
-  pos : [100.0, 100.0],
-  vel : [0.1, 0.1],
-  hue : 0,
-  bounds : [0,0, 100,100], // set in reset()
-  
-  reset : function(width, height) {
-    this.radius = Math.min(width,height) * 0.042;
-    this.bounds = [this.radius, this.radius, width - this.radius, height - this.radius];
-    this.pos[0] = Math.floor(Math.random() * width-2*this.radius);
-    this.pos[1] = Math.floor(Math.random() * height-2*this.radius);
-  },
-  
-  time : 0.0,
-
-  move : function(dt) { 
-    if(mode=='clelia')
-      this.moveClelia(dt, 1.3); // p=1.3 gives a nice jumble ;-)
-    else if(mode=='nmi')
-      this.moveNMI(dt);
-    else // mode=='linear'
-      this.moveLinear(dt); // only moveLinear() supports targetAt() yet
-    //this.moveCircleEuler(dt); // Euler step will diverge of course :-p
-  },  
-
-  moveClelia : function(dt, p) {
-    this.time += dt;
-    let w = this.bounds[2];
-    let h = this.bounds[3];
-    let r = Math.min(w,h)*0.4;
-    let rad_per_msec = 0.0005;
-    let theta = rad_per_msec*this.time;
-    let phi = rad_per_msec*this.time * p;
-    this.pos = [.5*w + r*Math.cos(theta)*Math.cos(phi), 
-                .5*h + r*Math.cos(theta)*Math.sin(phi)];
-  },
-  
-  moveNMI : function(dt) {
-    this.time += dt;
-    let w = this.bounds[2];
-    let h = this.bounds[3];
-    let r = Math.min(w,h)*0.4;
-    let rad_per_msec = 0.0006;
-    let theta = rad_per_msec*this.time;
-    if(w/h > 1.)
-      Lissajou.A = [w/h, 1.];
-    else
-      Lissajou.A = [1., h/w];
-    Lissajou.delta = Math.PI-Math.PI*Math.cos((theta+2*Math.PI)/(23*Math.PI));
-    let l = Lissajou.eval(theta);
-    this.pos = [.5*w + r*l[0],
-                .5*h + r*l[1]];
-  },
-  
-  moveCircleEuler : function(dt) {
-    let w = this.bounds[2];
-    let h = this.bounds[3];
-    let nc = [this.pos[0] - .5*w, this.pos[1] - .5*h];
-    let s = 0.2/Math.min(w,h);
-    this.vel = [-nc[1]*s, nc[0]*s];
+  var ball = {
+    radius : 23,
+    pos : [100.0, 100.0],
+    vel : [0.1, 0.1],
+    hue : 0,
+    bounds : [0,0, 100,100], // set in reset()
     
-    for( var d=0; d < 2; ++d )
-      this.pos[d] += dt*this.vel[d];
-  },
-  
-  moveLinear : function(dt) {
-    let r = this.radius;
-    let boundLo = [ this.bounds[0], this.bounds[1] ];
-    let boundUp = [ this.bounds[2], this.bounds[3] ];
-    for( var d=0; d < 2; ++d ) { // x,y dimensions are handled identical
-      this.pos[d] += dt*this.vel[d];
+    reset : function(width, height) {
+      this.radius = Math.min(width,height) * 0.042;
+      this.bounds = [this.radius, this.radius, width - this.radius, height - this.radius];
+      this.pos[0] = Math.floor(Math.random() * width-2*this.radius);
+      this.pos[1] = Math.floor(Math.random() * height-2*this.radius);
+    },
+    
+    time : 0.0,
 
-      if(this.pos[d] > boundUp[d]) {
-        this.vel[d] = -Math.abs(this.vel[d]);
-        this.pos[d] = boundUp[d] - 1;
+    move : function(dt) { 
+      if(mode=='clelia')
+        this.moveClelia(dt, 1.3); // p=1.3 gives a nice jumble ;-)
+      else if(mode=='nmi')
+        this.moveNMI(dt);
+      else // mode=='linear'
+        this.moveLinear(dt); // only moveLinear() supports targetAt() yet
+      //this.moveCircleEuler(dt); // Euler step will diverge of course :-p
+    },  
+
+    moveClelia : function(dt, p) {
+      this.time += dt;
+      let w = this.bounds[2];
+      let h = this.bounds[3];
+      let r = Math.min(w,h)*0.4;
+      let rad_per_msec = 0.0005;
+      let theta = rad_per_msec*this.time;
+      let phi = rad_per_msec*this.time * p;
+      this.pos = [.5*w + r*Math.cos(theta)*Math.cos(phi), 
+                  .5*h + r*Math.cos(theta)*Math.sin(phi)];
+    },
+    
+    moveNMI : function(dt) {
+      this.time += dt;
+      let w = this.bounds[2];
+      let h = this.bounds[3];
+      let r = Math.min(w,h)*0.4;
+      let rad_per_msec = 0.0006;
+      let theta = rad_per_msec*this.time;
+      if(w/h > 1.)
+        Lissajou.A = [w/h, 1.];
+      else
+        Lissajou.A = [1., h/w];
+      Lissajou.delta = Math.PI-Math.PI*Math.cos((theta+2*Math.PI)/(23*Math.PI));
+      let l = Lissajou.eval(theta);
+      this.pos = [.5*w + r*l[0],
+                  .5*h + r*l[1]];
+    },
+    
+    moveCircleEuler : function(dt) {
+      let w = this.bounds[2];
+      let h = this.bounds[3];
+      let nc = [this.pos[0] - .5*w, this.pos[1] - .5*h];
+      let s = 0.2/Math.min(w,h);
+      this.vel = [-nc[1]*s, nc[0]*s];
+      
+      for( var d=0; d < 2; ++d )
+        this.pos[d] += dt*this.vel[d];
+    },
+    
+    moveLinear : function(dt) {
+      let r = this.radius;
+      let boundLo = [ this.bounds[0], this.bounds[1] ];
+      let boundUp = [ this.bounds[2], this.bounds[3] ];
+      for( var d=0; d < 2; ++d ) { // x,y dimensions are handled identical
+        this.pos[d] += dt*this.vel[d];
+
+        if(this.pos[d] > boundUp[d]) {
+          this.vel[d] = -Math.abs(this.vel[d]);
+          this.pos[d] = boundUp[d] - 1;
+        }
+        if(this.pos[d] < boundLo[d]) {
+          this.vel[d] = Math.abs(this.vel[d]);
+          this.pos[d] = boundLo[d] + 1;
+        }
+      }  
+    },
+    
+    targetAt : function(x,y) {
+      const dx = (x - this.pos[0]);
+      const dy = (y - this.pos[1]);
+      const s = Math.min(0.00001*Math.sqrt(dx*dx + dy*dy), 0.001);
+      this.vel[0] = s*dx;
+      this.vel[1] = s*dy;
+    },
+    
+    draw : function(canvas,context) {
+      context.beginPath();
+      
+      context.strokeStyle = 'white';
+      if(style=='bw') {
+        context.fillStyle = 'black'; //'hsl(' + this.hue + ',100%,50%)';
+      } else if(style=='nmi') {
+        let radialGradient = context.createRadialGradient(
+          this.pos[0]+this.radius*0.2, this.pos[1]-this.radius*0.2, this.radius*0.1, 
+          this.pos[0], this.pos[1], this.radius );
+        radialGradient.addColorStop(0, "#f49cf4"); //f254f2
+        radialGradient.addColorStop(1, "#630c63"); //681168
+        context.fillStyle = radialGradient;
+        context.strokeStyle = 'black';
+      } else { // 'rainbow'
+        context.fillStyle = 'hsl(' + this.hue + ',100%,50%)';
       }
-      if(this.pos[d] < boundLo[d]) {
-        this.vel[d] = Math.abs(this.vel[d]);
-        this.pos[d] = boundLo[d] + 1;
-      }
+      
+      context.arc(this.pos[0], this.pos[1], this.radius, 0, 2*Math.PI, false);
+      context.fill();
+      context.lineWidth = 2;
+      context.stroke();
     }  
-  },
-  
-  targetAt : function(x,y) {
-    const dx = (x - this.pos[0]);
-    const dy = (y - this.pos[1]);
-    const s = Math.min(0.00001*Math.sqrt(dx*dx + dy*dy), 0.001);
-    this.vel[0] = s*dx;
-    this.vel[1] = s*dy;
-  },
-  
-  draw : function(canvas,context) {
-    context.beginPath();
-    
-    context.strokeStyle = 'white';
-    if(style=='bw') {
-      context.fillStyle = 'black'; //'hsl(' + this.hue + ',100%,50%)';
-    } else if(style=='nmi') {
-      let radialGradient = context.createRadialGradient(
-        this.pos[0]+this.radius*0.2, this.pos[1]-this.radius*0.2, this.radius*0.1, 
-        this.pos[0], this.pos[1], this.radius );
-      radialGradient.addColorStop(0, "#f49cf4"); //f254f2
-      radialGradient.addColorStop(1, "#630c63"); //681168
-      context.fillStyle = radialGradient;
-      context.strokeStyle = 'black';
-    } else { // 'rainbow'
-      context.fillStyle = 'hsl(' + this.hue + ',100%,50%)';
+  };
+
+  var resize = function() {
+    const new_size = [ window.innerWidth, window.innerHeight ]; //[ Math.min( window.innerWidth, 640 ), Math.min( window.innerHeight, 480 ) ];
+    const resize_needed = new_size[0] != screen.canvas.width || new_size[1] != screen.canvas.height;
+    if (resize_needed) {
+      [screen].concat(buffers).forEach( function(buf){
+        buf.resizeAndClear(new_size[0], new_size[1]);
+      });
+      ball.reset(new_size[0], new_size[1]);
     }
-    
-    context.arc(this.pos[0], this.pos[1], this.radius, 0, 2*Math.PI, false);
-    context.fill();
-    context.lineWidth = 2;
-    context.stroke();
-  }  
-};
+  };
 
-function resize() {
-  const new_size = [ window.innerWidth, window.innerHeight ]; //[ Math.min( window.innerWidth, 640 ), Math.min( window.innerHeight, 480 ) ];
-  const resize_needed = new_size[0] != screen.canvas.width || new_size[1] != screen.canvas.height;
-  if (resize_needed) {
-    [screen].concat(buffers).forEach( function(buf){
-      buf.resizeAndClear(new_size[0], new_size[1]);
-    });
-    ball.reset(new_size[0], new_size[1]);
-  }
-}
+  var pauseAnimation = false;
+  var resetTimestamp = true;
+  var firstFrame = true;
+  let t0;
+  let tlast;
 
-var pauseAnimation = false;
-var resetTimestamp = true;
-let t0;
-let tlast;
-let firstFrame = true;
+  var update = function(timestamp) {
 
-function update(timestamp) {
+    if(t0 === undefined || resetTimestamp) {
+      t0 = timestamp;
+      tlast = timestamp;
+      resetTimestamp = false;
+    }    
+    const dt = timestamp - tlast;
+    if(dt > 40) { // 40ms = 25fps redraw rate
 
-  if(t0 === undefined || resetTimestamp) {
-    t0 = timestamp;
-    tlast = timestamp;
-    resetTimestamp = false;
-  }    
-  const dt = timestamp - tlast;
-  if(dt > 40) { // 40ms = 25fps redraw rate
-
-    if(!pauseAnimation) {
-    
-      ball.move(dt);
-    
-      if(firstFrame) {
-        for(var i=0; i < buffers.length; ++i)
-          ball.draw(buffers[i].canvas,buffers[i].context);    
-        firstFrame = false;
-      } else {
-        //buffers[mod].slowlyFadeToWhite();      
-        ball.draw(buffers[mod].canvas,buffers[mod].context);
+      if(!pauseAnimation) {
+      
+        ball.move(dt);
+      
+        if(firstFrame) {
+          for(var i=0; i < buffers.length; ++i)
+            ball.draw(buffers[i].canvas,buffers[i].context);    
+          firstFrame = false;
+        } else {
+          //buffers[mod].slowlyFadeToWhite();      
+          ball.draw(buffers[mod].canvas,buffers[mod].context);
+        }
       }
+      
+      screen.context.drawImage(buffers[mod].canvas, 0, 0);
+      mod = (mod+1)%numBuffers;
+      
+      ball.hue = (ball.hue+10) % 360;
+      
+      tlast = timestamp;
     }
     
-    screen.context.drawImage(buffers[mod].canvas, 0, 0);
-    mod = (mod+1)%numBuffers;
-    
-    ball.hue = (ball.hue+10) % 360;
-    
-    tlast = timestamp;
-  }
+    window.requestAnimationFrame(update);
+  };
+
+  var getPositionInCanvas = function(canvas, e, c) {
+    var rect = canvas.getBoundingClientRect(e);
+    return {
+      x: (c.clientX - rect.left) * (canvas.width / rect.width),
+      y: (c.clientY - rect.top) * (canvas.height / rect.height)
+    }
+  };
+
+  var touchAndClickHandler = function(e) {
+    var pos = getPositionInCanvas(screen.canvas, e, e.touches ? e.touches[0] : e);
+    e.preventDefault();
+    if(e.buttons || e.touches)
+      ball.targetAt(pos.x, pos.y);
+  };
+
+  var pause = function() {
+    pauseAnimation = true;
+    var el = document.getElementById('pause');
+    if(el) el.innerHTML = 'unpause';  
+  };
+
+  var unpause = function() {
+    pauseAnimation = false;
+    resetTimestamp = true;
+    var el = document.getElementById('pause');
+    if(el) el.innerHTML = 'pause';    
+    window.requestAnimationFrame(update);  
+  };
+
+  var stop = function() {  
+    if(!pauseAnimation) {
+      pause();  
+      for(var i=0; i < buffers.length; ++i)    
+        ball.draw(buffers[i].canvas,buffers[i].context);
+    }
+  };
   
-  window.requestAnimationFrame(update);
-}
+  this.togglePause = function() {
+    if(!pauseAnimation) {
+      stop();
+    } else {
+      unpause();
+    }
+  }; 
 
-function getPositionInCanvas(canvas, e, c) {
-  var rect = canvas.getBoundingClientRect(e);
-  return {
-    x: (c.clientX - rect.left) * (canvas.width / rect.width),
-    y: (c.clientY - rect.top) * (canvas.height / rect.height)
-  }
-}
-
-function touchAndClickHandler(e) {
-  var pos = getPositionInCanvas(screen.canvas, e, e.touches ? e.touches[0] : e);
-  e.preventDefault();
-  if(e.buttons || e.touches)
-    ball.targetAt(pos.x, pos.y);
-}
-
-function pause() {
-  pauseAnimation = true;
-  var el = document.getElementById('pause');
-  if(el) el.innerHTML = 'unpause';  
-}
-
-function unpause() {
-  pauseAnimation = false;
-  resetTimestamp = true;
-  var el = document.getElementById('pause');
-  if(el) el.innerHTML = 'pause';    
-  window.requestAnimationFrame(update);  
-}
-
-function togglePause() {
-  if(!pauseAnimation) {
+  this.renderGIF = function() {
     stop();
-  } else {
-    unpause();
-  }
+    
+    var gif = new GIF({
+      workerScript: '3rdparty/gif.js/gif.worker.js',
+      workers: 4,
+      quality: 10,
+      width: buffers[0].canvas.width, 
+      height: buffers[1].canvas.height,
+      background: '#fff'
+    });
+    
+    for(var i=0; i < buffers.length; ++i) {
+      console.log('renderGIF() - add buffer '+i);  
+      gif.addFrame(buffers[i].context, {copy: true, delay: 40});
+    }
+
+    gif.on('finished', function(blob) {
+      window.open(URL.createObjectURL(blob));
+    });
+
+    gif.render();
+  };
+
+
+  this.init = function() {
+    parse_query_string();
+    for(let i=0; i < numBuffers; ++i)
+        buffers[i] = new DrawBuffer(document.createElement('canvas'));  
+    resize();
+    screen.canvas.addEventListener("touchstart", touchAndClickHandler);
+    screen.canvas.addEventListener("touchmove", touchAndClickHandler);
+    screen.canvas.addEventListener("mousedown", touchAndClickHandler);
+    screen.canvas.addEventListener("mousemove", touchAndClickHandler);
+    window.addEventListener('resize', resize, false);
+    window.requestAnimationFrame(update);
+  };
 }
 
-function stop() {  
-  if(!pauseAnimation) {
-    pause();  
-    for(var i=0; i < buffers.length; ++i)    
-      ball.draw(buffers[i].canvas,buffers[i].context);
-  }
-}
-
-function renderGIF() {
-
-  stop();
-  
-  var gif = new GIF({
-    workerScript: '3rdparty/gif.js/gif.worker.js',
-    workers: 4,
-    quality: 10,
-    width: buffers[0].canvas.width, 
-    height: buffers[1].canvas.height,
-    background: '#fff'
-  });
-  
-  console.log(gif);  
-  
-  for(var i=0; i < buffers.length; ++i) {
-    console.log('renderGIF() - add buffer '+i);  
-    gif.addFrame(buffers[i].context, {copy: true, delay: 40});
-  }
-
-  gif.on('finished', function(blob) {
-    window.open(URL.createObjectURL(blob));
-  });
-
-  gif.render();
-}
-
-
-resize();
-screen.canvas.addEventListener("touchstart", touchAndClickHandler);
-screen.canvas.addEventListener("touchmove", touchAndClickHandler);
-screen.canvas.addEventListener("mousedown", touchAndClickHandler);
-screen.canvas.addEventListener("mousemove", touchAndClickHandler);
-window.addEventListener('resize', resize, false);
-window.requestAnimationFrame(update); // consider setInterval() to get rid of timing code above
+InfiniBalls.init();
 </script>
 </body>
 </html>
