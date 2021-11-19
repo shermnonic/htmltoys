@@ -5,12 +5,13 @@
 <title>sinescans2</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
 <meta name="author" content="386dx25, mnemonic@386dx25.de"/>
-<meta name="description" content="A classic function plotter with a twist." />
+<meta name="description" property="og:description" content="A classic function plotter with a twist." />
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:site" content="@386dx25" />
 <meta name="twitter:title" content="sinescans2" />
 <meta name="twitter:description" content="A classic function plotter with a twist." />
 <meta name="twitter:image" content="https://shermnonic.github.io/htmltoys/img/sinescans2.png" />
+<meta property="og:image" content="https://386dx25.de/krsopka_b/pages/FRONT.png" />
 <style>
 html, body {
   width:  100%;
@@ -18,19 +19,29 @@ html, body {
   margin: 0;
   text-align: center;
 }
+button {
+  background: none; 
+  border: none; 
+  position: fixed; 
+  top: 5px; 
+  right: 5px; 
+  color:#aaa
+}
+h1 {
+  margin-bottom: 0;
+}
 </style>
 </head>
 <body>
-<h1 style="margin-bottom:0pt;">sinescans2</h1>
-<div><span id="funcInfo"></span></div>
+<h1>sinescans2</h1>
+<span id="info"></span>
 <canvas id="canvas" width="128" height="128"></canvas>
-<div style="position: fixed; top: 5px; right: 5px; color:#aaa">
-  <button onclick="toggleFullscreen()"><svg width="16" height="16" viewBox="0 0 24 24"><path class="foo" d="M24 9h-2v-7h-7v-2h9v9zm-9 15v-2h7v-7h2v9h-9zm-15-9h2v7h7v2h-9v-9zm9-15v2h-7v7h-2v-9h9z"/></svg></button>
-</div>
-<div><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2020</p></div>
+<button onclick="toggleFullscreen()"><svg width="16" height="16" viewBox="0 0 24 24"><path class="foo" d="M24 9h-2v-7h-7v-2h9v9zm-9 15v-2h7v-7h2v9h-9zm-15-9h2v7h7v2h-9v-9zm9-15v2h-7v7h-2v-9h9z"/></svg></button>
+<p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2020</p>
 <script>
 const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
+const info = document.getElementById("info");
 
 var canvasData;
 var imageBuffer;
@@ -39,7 +50,8 @@ var time = 0;
 
 var roll_landscape = false;
 var rotate = true;
-var rotation_time = 0.0;
+var rotationSpeed = 0.3;
+var rotationAngle = 0.0;
 
 var currentFunc = 0;
 
@@ -52,32 +64,23 @@ function powinvtent(x,a) {
     return 1.0-Math.pow(Math.abs(fmod(x,2.0)-1.0),a);
 }
 
-function updateFuncInfo() {
-  var info = document.getElementById("funcInfo");
+var funcs = [
+  { name: "fancy function 1", eval: (x,y,t,a) => { return 2.5*(powinvtent(x,a)*powinvtent(y*2.0,a) - 0.7); } },
+  { name: "fancy function 2", eval: (x,y,t,a) => { return 2.5*(powinvtent(x+Math.sin(y*2.0),a) - 0.7); } },
+  { name: "tent",     eval: (x,y,t,a) => { return Math.max(5*Math.min(1 - Math.abs(.75*x),1 - Math.abs(.75*y)),0); } },
+  { name: "Gaussian", eval: (x,y,t,a) => { return 3*Math.exp(-((x-1.5)*(x-1.5)+y*y)/0.5); } },
+  { name: "Bessel",   eval: (x,y,t,a) => { return 0.5*Math.sin(Math.PI*x)*Math.sin(Math.PI*y)/(x*y); } },
+  { name: "plasma",   eval: (x,y,t,a) => { return 2*Math.cos(Math.PI*x/2.5)*Math.sin(Math.PI*y/2.5); } },
+  { name: "saddle",   eval: (x,y,t,a) => { return x*y; } },
+  { name: "sigmoid",  eval: (x,y,t,a) => { return 4*(1/(1+Math.exp(-4*x)) - 0.5); } },
+];
+
+
+function updateInfo() {  
   if(info) {
-    names = [
-    'fancy function 1',
-    'fancy function 2',
-    'tent',
-    'Bessel',
-    'Gaussian',
-    'plasma',
-    'saddle',
-    'sigmoid'];
-    info.innerHTML = names[currentFunc];
+    info.innerHTML = funcs[currentFunc].name;
   }
 }
-
-var funcs = [
-  function(x,y,t,a) { return 2.5*(powinvtent(x,a)*powinvtent(y*2.0,a) - 0.7); },
-  function(x,y,t,a) { return 2.5*(powinvtent(x+Math.sin(y*2.0),a) - 0.7); },
-  function(x,y,t,a) { return Math.max(5*Math.min(1 - Math.abs(.75*x),1 - Math.abs(.75*y)),0); }, // tent
-  function(x,y,t,a) { return 0.5*Math.sin(Math.PI*x)*Math.sin(Math.PI*y)/(x*y); }, // Bessel
-  function(x,y,t,a) { return 3*Math.exp(-((x-1.5)*(x-1.5)+y*y)/0.5); }, // Gaussian
-  function(x,y,t,a) { return 2*Math.cos(Math.PI*x/2.5)*Math.sin(Math.PI*y/2.5); }, // plasma
-  function(x,y,t,a) { return x*y; }, // saddle
-  function(x,y,t,a) { return 4*(1/(1+Math.exp(-4*x)) - 0.5); }, // sigmoid
-];
 
 var transition = {
   inProgress: false,
@@ -116,11 +119,10 @@ function requestTransition( step ) {
 
 function evalFunc(x,y) {
   if( transition.inProgress )
-    return (1-transition.lambda)*funcs[transition.fromIndex](x,y,func_t,func_a) + transition.lambda*funcs[transition.toIndex](x,y,func_t,func_a);
+    return (1-transition.lambda)*funcs[transition.fromIndex].eval(x,y,func_t,func_a) + transition.lambda*funcs[transition.toIndex].eval(x,y,func_t,func_a);
   else
-    return funcs[currentFunc](x,y,func_t,func_a);
+    return funcs[currentFunc].eval(x,y,func_t,func_a);
 }
-
 
 function pset( x,y, r,g,b,a ) {
   var index = (x + y * canvas.width) * 4;
@@ -147,8 +149,8 @@ function drawLandscape() {
   var f=0.0;
   var zi=0;
   
-  var sin_a = Math.sin(rotation_time*0.3);
-  var cos_a = Math.cos(rotation_time*0.3);
+  var sin_a = Math.sin(rotationAngle);
+  var cos_a = Math.cos(rotationAngle);
   var x = 0.0;
   var y = 0.0;
   
@@ -197,24 +199,6 @@ function drawLandscape() {
   context.putImageData( canvasData, 0,0 );
 }
 
-
-function onClick(e) {
-  var c = e.touches ? e.touches[0] : e;
-  if(c.clientX && c.clientY) {
-    if(c.clientX > canvas.width/4 && c.clientX < 3*canvas.width/4) {
-      if(c.clientY < canvas.height/3) {
-        roll_landscape = !roll_landscape;
-      } else if(c.clientY > 2*canvas.height/3) {
-        rotate = !rotate;
-      } else {   
-        requestTransition( (c.clientX > canvas.width/2) ? +1 : -1 );
-      }      
-    } else {   
-      requestTransition( (c.clientX > canvas.width/2) ? +1 : -1 );
-    }
-  }
-}
-
 function updateGlobals() {
   canvas.width = window.innerWidth;
   canvas.height = Math.max(window.innerHeight-160,280);
@@ -232,12 +216,12 @@ function updateAnimation( dt ) {
   func_a = 3.5*Math.sin(func_t)*Math.sin(func_t)+0.5;
   
   if( rotate ) {
-    rotation_time = rotation_time + dt*0.001;
+    rotationAngle += rotationSpeed * dt*0.001
   }
   
   if( !transition.update(time) ) {
     currentFunc = transition.toIndex;
-    updateFuncInfo();
+    updateInfo();
   }
 }
 
@@ -261,44 +245,88 @@ function update(timestamp) {
   tlast = timestamp;
 }  
 
-updateFuncInfo();
-canvas.addEventListener("click", onClick, true);
+var control = {
+  active: false,
+  delta: [0, 0],
+  startPos: [0,0],
+  startRotationSpeed: 0,
+  down: function(x,y) {
+    this.active = true;
+    this.startPos = [x,y];
+    this.startRotationSpeed = rotationSpeed;
+  },
+  up: function() {
+    this.active = false;
+  },
+  move: function(x,y) {
+    if(this.active) {
+      this.delta = [x-this.startPos[0], y-this.startPos[1]];
+      rotationSpeed = Math.min(Math.max(this.startRotationSpeed + this.delta[0], -0.2*Math.PI), 0.2*Math.PI);
+      
+      if(this.delta[1] >  0.15) requestTransition(+1); else
+      if(this.delta[1] < -0.15) requestTransition(-1);
+    }
+  },
+};
+
+function getPositionInCanvas(canvas, e) {
+  const c = e.touches ? e.touches[0] : e;
+  const rect = canvas.getBoundingClientRect(e);
+  return {
+    x: (c.clientX - rect.left) * (canvas.width / rect.width),
+    y: (c.clientY - rect.top) * (canvas.height / rect.height)
+  }
+}
+
+function getRelativePositionInCanvas(canvas, e) {
+  const pos = getPositionInCanvas(canvas, e);
+  pos.x /= canvas.width;
+  pos.y /= canvas.height;
+  return pos;
+}
+
+updateInfo();
 window.requestAnimationFrame(update);
 
+canvas.addEventListener("mousedown", (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.down(pos.x,pos.y); });
+canvas.addEventListener("mouseup",   (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.up  (pos.x,pos.y); });
+canvas.addEventListener("mouseout",  (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.up  (pos.x,pos.y); });
+canvas.addEventListener("mousemove", (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.move(pos.x,pos.y); });
+
+canvas.addEventListener("touchstart",(e) => { const pos=getRelativePositionInCanvas(canvas, e); control.down(pos.x,pos.y); }, { passive: false });
+canvas.addEventListener("touchend",  (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.up  (pos.x,pos.y); }, { passive: false });
+canvas.addEventListener("touchcancel",(e)=> { const pos=getRelativePositionInCanvas(canvas, e); control.up  (pos.x,pos.y); }, { passive: false });
+canvas.addEventListener("touchmove", (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.move(pos.x,pos.y); }, { passive: false });
 
 
 var fullscreen = false;
 
 function requestFullscreen( elem ) {
   if (!elem) return;
+  fullscreen = true;
   if (elem.requestFullscreen) {
     elem.requestFullscreen();
-    fullscreen = true;
   } else if (elem.mozRequestFullScreen) {
     elem.mozRequestFullScreen();
-    fullscreen = true;
   } else if (elem.webkitRequestFullscreen) {
     elem.webkitRequestFullscreen();
-    fullscreen = true;
   } else if (elem.msRequestFullscreen) {
     elem.msRequestFullscreen();
-    fullscreen = true;
+  } else {
+    fullscreen = false;
   }
 }
 
 function exitFullscreen() {
+  fullscreen = false;
   if (document.exitFullscreen) {
     document.exitFullscreen();
-    fullscreen = false;
   } else if (document.mozCancelFullScreen) {
     document.mozCancelFullScreen();
-    fullscreen = false;
   } else if (document.webkitExitFullscreen) {
     document.webkitExitFullscreen();
-    fullscreen = false;
   } else if (document.msExitFullscreen) {
     document.msExitFullscreen();
-    fullscreen = false;
   }
 }
 
