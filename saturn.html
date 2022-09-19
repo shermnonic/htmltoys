@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<!-- www.386dx25.de 2022 -->
+<html>
+<head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="author" content="386dx25, mnemonic@386dx25.de"/>
+</head>
+<body style="margin:0; padding:0; overflow: hidden;";>
+<canvas style="border:1px solid black;"></canvas> <!-- width: 100%; height: 100%;  doesn't work as expected, see HACK below -->
+<script>
+// -- minimal dwitter interface
+const c = document.createElement('canvas');
+c.width = 1920;
+c.height = 1080;
+const x = c.getContext('2d');
+
+function R(r,g,b,a) {
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function dweet(t) {
+  this.f||(this.f=v=p=1,u=350)
+  x.fillStyle=R(210,p++%128,0,0.1)
+  for(i=0;i<1e3;++i){
+    if(u-v<0||u*u+v*v>414**2)
+    x.fillRect(900+u,542+v,3,3)
+    u=u-1.51*~~v
+    v=v+1.21*u
+  }
+}
+
+
+// -- player w/ canvas auto-scale and auto-rotate for portrait window size
+const screen = document.getElementsByTagName("canvas")[0];
+const screen_context = screen.getContext('2d');
+
+// HACK: force canvas size update; style width/height=100% doesn't do the trick
+function resize() {
+  const border_width = 1;
+  screen.width = window.innerWidth - 2*border_width;
+  screen.height = window.innerHeight - 2*border_width;
+  update();
+}
+resize();
+window.addEventListener('resize', resize, false);
+
+// https://stackoverflow.com/questions/17411991/html5-canvas-rotate-image
+function drawTransformedImage(image, x, y, cx, cy, scale_x, scale_y, rotation){
+    screen_context.setTransform(scale_x, 0, 0, scale_y, x, y);
+    screen_context.rotate(rotation);
+    screen_context.drawImage(image, -cx, -cy);    
+    screen_context.setTransform(1,0,0,1,0,0); // reset not needed here, but whatever
+} 
+
+// main loop & init
+function update(t) {
+  dweet(t);
+
+  let scale=1, alpha=0, flipx=1;
+  if(screen.height > screen.width) {
+    scale = Math.max(screen.height/c.width, screen.width/c.height);
+    alpha = -Math.PI/2;
+    flipx = -1;
+  } else {
+    scale = Math.max(screen.height/c.height, screen.width/c.width);
+  }
+  drawTransformedImage(c, screen.width/2,  screen.height/2, c.width/2, c.height/2, scale*flipx, scale, alpha);
+
+  window.requestAnimationFrame(update);
+}
+
+// launch
+x.fillStyle=R(255,255,255,1);
+x.fillRect(0,0,c.width,c.height);
+update();
+
+</script>
+</body>
+</html>
