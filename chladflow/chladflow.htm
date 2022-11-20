@@ -87,12 +87,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
   
   // fade background radially, interlaced lines
   float l = length(npc);
-  vec3 bg = 1.-(1.-l)*rb*mod(fragCoord.y,3.0);
+  vec4 bg = vec4(vec3(1.-(1.-l)*rb*mod(fragCoord.y,3.0)), 1.0) * (1.0 - smoothstep(0.5,1.0,l));
   
   // skip raycasting beyond a central disc
   if( l > .9 )
   {
-    fragColor = vec4(bg,1);
+    fragColor = bg;
     return;
   }
    
@@ -102,7 +102,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
   vec3 p0 = vec3(npc,-1.0);
   vec3 eye = vec3(0.0,0.0,-2.0);
   vec3 dir = normalize(p0 - eye);
-  vec4 dst = vec4(bg,1.);
+  vec4 dst = bg;
   for( int i=0; i < 100; ++i )
   {
     float s = float(i)*stepsize;
@@ -130,7 +130,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
       vec3 c = cos(31.0*r);
       vec3 refl = 1.2*vec3(1,1,1)*h0*c.x + 1.7*vec3(.8,.9,1)*h1;
      
-      dst = .7*vec4(0.42*rd*diff + 1.0*rs*spec + 0.5*refl, 1.0);      
+      dst = .7*vec4(0.42*rd*diff + 1.0*rs*spec + 0.5*refl, 1.0);
       break;
     }
   }
@@ -171,7 +171,6 @@ footer {
 <canvas id="glcanvas" width="320" height="320"></canvas>
 <div style="position: fixed; top: 5px; right: 5px; color:#aaa">
   <input size="2" id="framerate" style="border: 0; text-align: right; color:#aaa"> fps
-  <button onclick="toggleFullscreen()"><svg width="16" height="16" viewBox="0 0 24 24"><path class="foo" d="M24 9h-2v-7h-7v-2h9v9zm-9 15v-2h7v-7h2v9h-9zm-15-9h2v7h7v2h-9v-9zm9-15v2h-7v7h-2v-9h9z"/></svg></button>
 </div>
 <footer>by <a href="http://www.386dx25.de">386dx25.de</a>, 2019</footer>
 <script>
@@ -200,47 +199,6 @@ function resize() {
 }
 
 
-var fullscreen = false;
-
-function requestFullscreen( elem ) {
-  if (!elem) return;
-  if (elem.requestFullscreen) {
-    elem.requestFullscreen();
-    fullscreen = true;
-  } else if (elem.mozRequestFullScreen) {
-    elem.mozRequestFullScreen();
-    fullscreen = true;
-  } else if (elem.webkitRequestFullscreen) {
-    elem.webkitRequestFullscreen();
-    fullscreen = true;
-  } else if (elem.msRequestFullscreen) {
-    elem.msRequestFullscreen();
-    fullscreen = true;
-  }
-}
-
-function exitFullscreen() {
-  if (document.exitFullscreen) {
-    document.exitFullscreen();
-    fullscreen = false;
-  } else if (document.mozCancelFullScreen) {
-    document.mozCancelFullScreen();
-    fullscreen = false;
-  } else if (document.webkitExitFullscreen) {
-    document.webkitExitFullscreen();
-    fullscreen = false;
-  } else if (document.msExitFullscreen) {
-    document.msExitFullscreen();
-    fullscreen = false;
-  }
-}
-
-function toggleFullscreen() {
-  if(fullscreen)
-    exitFullscreen();
-  else
-    requestFullscreen(document.documentElement);
-}
 
 
 function updateKnotInfo() {

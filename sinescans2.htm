@@ -30,14 +30,32 @@ button {
 h1 {
   margin-bottom: 0;
 }
+.underline {
+  text-decoration: underline;
+}
+.control {
+  cursor: pointer;
+}
+#info {
+  position: absolute;
+  top: 60px;
+  text-align: center;
+  width: 100%;
+}
+footer {
+  width: 100%;
+  position: absolute;
+  bottom: 0px;
+  margin: auto;
+  background: rgba(255,255,255,0.5);
+}
 </style>
 </head>
 <body>
 <h1>sinescans2</h1>
-<span id="info"></span>
+<div id="info"></div>
 <canvas id="canvas" width="128" height="128"></canvas>
-<button onclick="toggleFullscreen()"><svg width="16" height="16" viewBox="0 0 24 24"><path class="foo" d="M24 9h-2v-7h-7v-2h9v9zm-9 15v-2h7v-7h2v9h-9zm-15-9h2v7h7v2h-9v-9zm9-15v2h-7v7h-2v-9h9z"/></svg></button>
-<p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2020</p>
+<footer><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2020</p></footer>
 <script>
 const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
@@ -65,8 +83,8 @@ function powinvtent(x,a) {
 }
 
 var funcs = [
-  { name: "fancy function 1", eval: (x,y,t,a) => { return 2.5*(powinvtent(x,a)*powinvtent(y*2.0,a) - 0.7); } },
-  { name: "fancy function 2", eval: (x,y,t,a) => { return 2.5*(powinvtent(x+Math.sin(y*2.0),a) - 0.7); } },
+  { name: "fancy1", eval: (x,y,t,a) => { return 2.5*(powinvtent(x,a)*powinvtent(y*2.0,a) - 0.7); } },
+  { name: "fancy2", eval: (x,y,t,a) => { return 2.5*(powinvtent(x+Math.sin(y*2.0),a) - 0.7); } },
   { name: "tent",     eval: (x,y,t,a) => { return Math.max(5*Math.min(1 - Math.abs(.75*x),1 - Math.abs(.75*y)),0); } },
   { name: "Gaussian", eval: (x,y,t,a) => { return 3*Math.exp(-((x-1.5)*(x-1.5)+y*y)/0.5); } },
   { name: "Bessel",   eval: (x,y,t,a) => { return 0.5*Math.sin(Math.PI*x)*Math.sin(Math.PI*y)/(x*y); } },
@@ -76,9 +94,21 @@ var funcs = [
 ];
 
 
-function updateInfo() {  
+function updateInfo() {
   if(info) {
-    info.innerHTML = funcs[currentFunc].name;
+    info.innerHTML = "";
+    for(var i=0; i < funcs.length; ++i) {
+      let span = document.createElement('p');
+      span.textContent = funcs[i].name;
+      span.classList.add("control");
+      if(i==currentFunc) {
+        span.classList.add("underline");
+      } else {
+        const idx = i;
+        span.addEventListener('click', (e) => { requestTransitionTo(idx); });
+      }
+      info.appendChild(span);
+    }
   }
 }
 
@@ -111,10 +141,13 @@ var transition = {
   }
 }
 
+function requestTransitionTo( targetFunc ) {
+  transition.start( time, currentFunc, targetFunc );
+}
+
 function requestTransition( step ) {
-  console.log(step);
   if(step < 0) step = funcs.length + step;
-  transition.start( time, currentFunc, (currentFunc + step) % funcs.length );
+  requestTransitionTo((currentFunc + step) % funcs.length);
 }
 
 function evalFunc(x,y) {
@@ -293,49 +326,13 @@ canvas.addEventListener("mouseup",   (e) => { const pos=getRelativePositionInCan
 canvas.addEventListener("mouseout",  (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.up  (pos.x,pos.y); });
 canvas.addEventListener("mousemove", (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.move(pos.x,pos.y); });
 
+canvas.addEventListener('wheel', (e) => { if(e.deltaY>0) requestTransition(+1); else if(e.deltaY<0) requestTransition(-1); e.preventDefault(); }, false);
+
 canvas.addEventListener("touchstart",(e) => { const pos=getRelativePositionInCanvas(canvas, e); control.down(pos.x,pos.y); }, { passive: false });
 canvas.addEventListener("touchend",  (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.up  (pos.x,pos.y); }, { passive: false });
 canvas.addEventListener("touchcancel",(e)=> { const pos=getRelativePositionInCanvas(canvas, e); control.up  (pos.x,pos.y); }, { passive: false });
 canvas.addEventListener("touchmove", (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.move(pos.x,pos.y); }, { passive: false });
 
-
-var fullscreen = false;
-
-function requestFullscreen( elem ) {
-  if (!elem) return;
-  fullscreen = true;
-  if (elem.requestFullscreen) {
-    elem.requestFullscreen();
-  } else if (elem.mozRequestFullScreen) {
-    elem.mozRequestFullScreen();
-  } else if (elem.webkitRequestFullscreen) {
-    elem.webkitRequestFullscreen();
-  } else if (elem.msRequestFullscreen) {
-    elem.msRequestFullscreen();
-  } else {
-    fullscreen = false;
-  }
-}
-
-function exitFullscreen() {
-  fullscreen = false;
-  if (document.exitFullscreen) {
-    document.exitFullscreen();
-  } else if (document.mozCancelFullScreen) {
-    document.mozCancelFullScreen();
-  } else if (document.webkitExitFullscreen) {
-    document.webkitExitFullscreen();
-  } else if (document.msExitFullscreen) {
-    document.msExitFullscreen();
-  }
-}
-
-function toggleFullscreen() {
-  if(fullscreen)
-    exitFullscreen();
-  else
-    requestFullscreen(document.documentElement);
-}
 </script>
 </body>
 </html>

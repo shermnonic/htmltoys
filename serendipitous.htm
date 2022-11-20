@@ -9,6 +9,12 @@
 body {
   text-align: center;
 }
+footer {
+  width: 100%;
+  position: absolute;
+  bottom: 0px;
+  margin: auto;
+}
 #canvas {
   width: 90%;
   height: auto;
@@ -39,7 +45,7 @@ input[type=number]::-webkit-inner-spin-button {
     <a id="download" href="#" download="serendipitous">Download as image</a>
 </div>
 <canvas id="canvas" width="512" height="512"></canvas>
-<div><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2017</p></div>
+<footer><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2017</p></footer>
 <script>
 var canvas = document.getElementById('canvas');
 var context = canvas.getContext('2d');

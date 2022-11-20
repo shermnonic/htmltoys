@@ -20,7 +20,7 @@ body {
   padding: 0;
   margin: 0;
   overflow: hidden;
-  text-align: center;  
+  text-align: center;
 }
 header {
   width: 100%;
@@ -46,8 +46,10 @@ footer {
 </header>
 <canvas id="screen"></canvas>
 <footer>by <a href="http://www.386dx25.de">386dx25.de</a>, 2020</footer>
-<script>
+<script defer>
 'use strict';
+
+var bgcolor = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'rgba(0,0,0,1.0)' : 'rgba(255,255,255,1.0)';
 
 var InfiniBalls = new function() {
 
@@ -83,13 +85,12 @@ var InfiniBalls = new function() {
         document.getElementsByTagName("body")[0].style.color = "white";
       } else {      
         // clearRect() for transparent canvas, probably more efficient than fillRect
-        // this.context.clearRect(0,0,canvas.width,canvas.height);
+         this.context.clearRect(0,0,canvas.width,canvas.height);
 
         // however, for gif export we need explicitly filled (white) background
         // at least as long as gif.js background color property is broken
-        this.context.fillStyle = 'white';
+        this.context.fillStyle = bgcolor;
         this.context.fillRect(0,0,canvas.width,canvas.height);
-        document.getElementsByTagName("body")[0].style.color = "black";      
       }
     };
     
@@ -211,9 +212,9 @@ var InfiniBalls = new function() {
     draw : function(canvas,context) {
       context.beginPath();
       
-      context.strokeStyle = 'white';
       if(style=='bw') {
         context.fillStyle = 'black'; //'hsl(' + this.hue + ',100%,50%)';
+        context.strokeStyle = 'white';
       } else if(style=='nmi') {
         let radialGradient = context.createRadialGradient(
           this.pos[0]+this.radius*0.2, this.pos[1]-this.radius*0.2, this.radius*0.1, 
@@ -224,8 +225,8 @@ var InfiniBalls = new function() {
         context.strokeStyle = 'black';
       } else { // 'rainbow'
         context.fillStyle = 'hsl(' + this.hue + ',100%,50%)';
+        context.strokeStyle = 'white';
       }
-      
       context.arc(this.pos[0], this.pos[1], this.radius, 0, 2*Math.PI, false);
       context.fill();
       context.lineWidth = 2;
@@ -269,7 +270,7 @@ var InfiniBalls = new function() {
             ball.draw(buffers[i].canvas,buffers[i].context);    
           firstFrame = false;
         } else {
-          //buffers[mod].slowlyFadeToWhite();      
+          //buffers[mod].slowlyFadeToWhite();
           ball.draw(buffers[mod].canvas,buffers[mod].context);
         }
       }
@@ -310,14 +311,14 @@ var InfiniBalls = new function() {
     pauseAnimation = false;
     resetTimestamp = true;
     var el = document.getElementById('pause');
-    if(el) el.innerHTML = 'pause';    
-    window.requestAnimationFrame(update);  
+    if(el) el.innerHTML = 'pause';
+    window.requestAnimationFrame(update);
   };
 
   var stop = function() {  
     if(!pauseAnimation) {
       pause();  
-      for(var i=0; i < buffers.length; ++i)    
+      for(var i=0; i < buffers.length; ++i)
         ball.draw(buffers[i].canvas,buffers[i].context);
     }
   };

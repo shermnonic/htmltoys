@@ -26,12 +26,14 @@ h1 {
   font-size: 140%;
   padding-top: 0.5em;
 }
-footer {
-  width: 100%;
+.footer {
+  font-size: 90%;
   position: absolute;
-  left: 0px;
   bottom: 0px;
+  left: 0px;
+  width: 100%;
   text-align: center;
+  background-color: #fff;
 }
 canvas { /* https://belenalbeza.com/retro-crisp-pixel-art-in-html-5-games/ */
   image-rendering: -moz-crisp-edges;
@@ -85,6 +87,13 @@ transition: 0.5s;
   justify-content: center;
   text-align: left;
 }
+
+#minibar {
+  position: fixed;
+  right: 5px;
+  top: 5px;
+}
+
 </style>
 </head>
 <body onresize="resize()">
@@ -107,8 +116,11 @@ transition: 0.5s;
       <a href="#" id="permalink">[permalink]</a>
     </div>
   <canvas id="canvas" width="128" height="128"></canvas>
+  <div id="minibar">
+    <button onclick="toggleFullscreen()"><svg width="16" height="16" viewBox="0 0 24 24"><path class="foo" d="M24 9h-2v-7h-7v-2h9v9zm-9 15v-2h7v-7h2v9h-9zm-15-9h2v7h7v2h-9v-9zm9-15v2h-7v7h-2v-9h9z"/></svg></button>
+  </div>
 </div>
-<footer><p><span style="background: rgba(255,255,255,0.8)">by <a href="http://www.386dx25.de">386dx25.de</a>, 2016</span></p></footer>
+<footer class="footer">by <a href="http://www.386dx25.de">386dx25.de</a>, 2016</footer>
 <script>
 var canvas     = document.getElementById('canvas');
 var background = document.getElementById('background');
@@ -163,7 +175,6 @@ function parse_query_string() {
   con_in = parseInt(params.get("con"));
   data_in = params.get("data");
   if(kernel_in) set_kernel(kernel_in);
-  if(con_in) con = con_in;
   if(data_in) {
     let k = kernel_from_string(data_in);
     if(k)
@@ -171,6 +182,7 @@ function parse_query_string() {
     else
       console.log('Kernel data malformed');
   }
+  if(params.get("con")&&con_in>=0) con = con_in;
 }
 
 function update_permalink() {
@@ -267,6 +279,8 @@ function init() {
 
   parse_query_string();
   
+  console.log('con=',con);
+  
   if( spin ) {
     spin.oninput = function() {
       con = +this.value;
@@ -308,18 +322,79 @@ function resize() {
   vertical_layout = window.innerWidth > window.innerHeight;
   background.width = 2*canvas.width-16;
   background.height = 2*canvas.height-16;
+  
+  let W = background.getBoundingClientRect().width;
+  let w = window.innerWidth - 54;
+  
+  let H = background.getBoundingClientRect().height;
+  let h = window.innerHeight - 54;
+
+  console.log(W, w);
+
+  let dy = -Math.floor((H-h)/2);
+  let dx = -Math.floor((W-w)/2);
+  
+  
   if( vertical_layout )
   {
     background.style.width = "100%";
     background.style.height = "auto";
+    background.style.top = "" + dy + "px";
+    background.style.left = "0px";
   }
   else
   {
     background.style.width = "auto";
     background.style.height = "100%";
+    background.style.top = "0px";
+    background.style.left = "" + dx + "px";
   }
   draw();
 }
+
+
+var fullscreen = false;
+
+function requestFullscreen( elem ) {
+  if (!elem) return;
+  if (elem.requestFullscreen) {
+    elem.requestFullscreen();
+    fullscreen = true;
+  } else if (elem.mozRequestFullScreen) {
+    elem.mozRequestFullScreen();
+    fullscreen = true;
+  } else if (elem.webkitRequestFullscreen) {
+    elem.webkitRequestFullscreen();
+    fullscreen = true;
+  } else if (elem.msRequestFullscreen) {
+    elem.msRequestFullscreen();
+    fullscreen = true;
+  }
+}
+
+function exitFullscreen() {
+  if (document.exitFullscreen) {
+    document.exitFullscreen();
+    fullscreen = false;
+  } else if (document.mozCancelFullScreen) {
+    document.mozCancelFullScreen();
+    fullscreen = false;
+  } else if (document.webkitExitFullscreen) {
+    document.webkitExitFullscreen();
+    fullscreen = false;
+  } else if (document.msExitFullscreen) {
+    document.msExitFullscreen();
+    fullscreen = false;
+  }
+}
+
+function toggleFullscreen() {
+  if(fullscreen)
+    exitFullscreen();
+  else
+    requestFullscreen(document.documentElement);
+}
+
 
 function update() {
   // http://codetheory.in/controlling-the-frame-rate-with-requestanimationframe/
@@ -363,6 +438,18 @@ function draw() {
       data[ofs++] = val; // R
       data[ofs++] = val; // G
       data[ofs++] = val; // B
+      
+      /*
+      if(y==0 || x==0 || x==(width-1) || y==(height-1)) {      
+        data[ofs++] = 0;
+        data[ofs++] = 0;
+        data[ofs++] = 0;
+      } else {
+        data[ofs++] = (x/width)*255; // R
+        data[ofs++] = 128.0; // G
+        data[ofs++] = (y/width)*255; // B
+      }
+      */      
       data[ofs++] = alpha; // A
     }
   }
@@ -371,10 +458,21 @@ function draw() {
   // update background
   bg_ctx = background.getContext('2d');
   if( bg_ctx ) {
-    bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, 0, 0, width-8, height-8 );
-    bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, width-8, 0, width-8, height-8 );
-    bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, 0, height-8, width-8, height-8 );
-    bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, width-8, height-8, width-8, height-8 );
+    let b = 4; // border
+    let w2 = width/2;
+    let h2 = height/2;
+    let h = [ [  h2, 0,    h2],
+              [ 0+b, 3*h2-2-2*b, h2],
+              [ 0+b, h2-1, height-2*b] ];
+              
+    for(let row=0; row < h.length; ++row) {
+      let h_src = h[row][0];
+      let h_dst = h[row][1];
+      let hh = h[row][2];
+      bg_ctx.drawImage( canvas, w2+b, h_src,    w2-b-1,  hh,      0, h_dst,    w2, hh );
+      bg_ctx.drawImage( canvas,    b, h_src, width-2*b,  hh,   w2-1, h_dst, width, hh );
+      bg_ctx.drawImage( canvas,    b, h_src,    w2-b-1,  hh, 3*w2-2, h_dst,    w2, hh );
+    }
   }
   
   clear=false;
