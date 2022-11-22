@@ -19,6 +19,13 @@ html, body {
   margin: 0;
   text-align: center;
 }
+@media (prefers-color-scheme: dark) {
+  body {
+    color: white;
+    background: #121212;
+  }
+  a { color: pink; }
+}
 button {
   background: none; 
   border: none; 
@@ -47,7 +54,6 @@ footer {
   position: absolute;
   bottom: 0px;
   margin: auto;
-  background: rgba(255,255,255,0.5);
 }
 </style>
 </head>
@@ -55,7 +61,10 @@ footer {
 <h1>sinescans2</h1>
 <div id="info"></div>
 <canvas id="canvas" width="128" height="128"></canvas>
-<footer><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2020</p></footer>
+<footer><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2020<br>
+(see <a href="https://github.com/shermnonic/htmltoys/blob/main/sinescans2.htm">source code on github</a>)
+</p></footer>
+
 <script>
 const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');

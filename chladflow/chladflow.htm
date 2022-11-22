@@ -150,6 +150,13 @@ html, body {
   -moz-user-select: none;
   -ms-user-select: none;
 }
+@media (prefers-color-scheme: dark) {
+  body {
+    color: white;
+    background: #121212;
+  }
+  a { color: pink; }
+}
 #glcanvas {
   position: fixed;
   top: 0;
@@ -172,7 +179,9 @@ footer {
 <div style="position: fixed; top: 5px; right: 5px; color:#aaa">
   <input size="2" id="framerate" style="border: 0; text-align: right; color:#aaa"> fps
 </div>
-<footer>by <a href="http://www.386dx25.de">386dx25.de</a>, 2019</footer>
+<footer><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2019<br>
+    (see also <a href="https://www.shadertoy.com/view/3dS3zV">shadertoy</a> and <a href="https://cineshader.com/view/3dS3zV">cineshader</a> version)
+    </p></footer>
 <script>
 var canvas = document.getElementById("glcanvas");
 var knotVector = [5.0, 3.0];

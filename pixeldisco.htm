@@ -22,16 +22,30 @@
   border-radius: 5px;
   margin-top: 2em;
 }
-h1 {
-  font-size: 140%;
-  padding-top: 0.5em;
-}
 footer {
   width: 100%;
   position: absolute;
   left: 0px;
   bottom: 0px;
   text-align: center;
+  background-color: rgba(255,255,255,0.8);
+}
+@media (prefers-color-scheme: dark) {
+  body {
+    color: white;
+    background: #121212;
+  }
+  a { color: pink; }
+  .wrapper {
+    background-color: rgba(0,0,0,0.7);
+  }
+  footer {
+    background-color: rgba(0,0,0,0.5);
+  }
+}
+h1 {
+  font-size: 140%;
+  padding-top: 0.5em;
 }
 canvas { /* https://belenalbeza.com/retro-crisp-pixel-art-in-html-5-games/ */
   image-rendering: -moz-crisp-edges;
@@ -108,7 +122,7 @@ transition: 0.5s;
     </div>
   <canvas id="canvas" width="128" height="128"></canvas>
 </div>
-<footer><p><span style="background: rgba(255,255,255,0.8)">by <a href="http://www.386dx25.de">386dx25.de</a>, 2016</span></p></footer>
+<footer><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2016</p></footer>
 <script>
 var canvas     = document.getElementById('canvas');
 var background = document.getElementById('background');

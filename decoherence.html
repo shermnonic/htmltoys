@@ -13,7 +13,6 @@ header {
   width: 100%;
   position: absolute;
   margin: auto;
-  background: rgba(255,255,255,0.5);
   z-index: 10;
 }
 footer {
@@ -21,12 +20,13 @@ footer {
   position: absolute;
   bottom: 0px;
   margin: auto;
-  background: rgba(255,255,255,0.5);
 }
 @media (prefers-color-scheme: dark) {
-  #screen {
-    filter: invert(100%);
+  body {
+    color: white;
+    background: #121212;
   }
+  a { color: pink; }
 }
 </style>
 <header><h1>Decoherence</h1></header>
@@ -140,8 +140,7 @@ function update(dt) {
 
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.clearRect(0,0,canvas.width,canvas.height);
-  context.fillStyle = 'rgb(255,255,255)';
-  context.strokeStyle = 'rgb(64,64,64)';
+  context.strokeStyle = 'rgb(128,128,128)';
   vectorfield.draw(context);
 }
 
