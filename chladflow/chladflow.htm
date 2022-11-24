@@ -176,12 +176,17 @@ footer {
 <h1 style="margin-bottom:0pt;">Chladni flower</h1>
 <div><span id="knotInfo"></span></div>
 <canvas id="glcanvas" width="320" height="320"></canvas>
-<div style="position: fixed; top: 5px; right: 5px; color:#aaa">
-  <input size="2" id="framerate" style="border: 0; text-align: right; color:#aaa"> fps
+<div style="position: fixed; top: 5px; right: 5px; color:#aaa;">
+  <input size="2" id="framerate" style="border: 0; text-align: right; color:#aaa; background:rgba(128,128,128,0.0)"> fps
 </div>
-<footer><p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2019<br>
-    (see also <a href="https://www.shadertoy.com/view/3dS3zV">shadertoy</a> and <a href="https://cineshader.com/view/3dS3zV">cineshader</a> version)
-    </p></footer>
+<footer>
+  <p>
+    by <a href="http://www.386dx25.de">386dx25.de</a>, 2019<br>
+    (<a href="https://github.com/shermnonic/htmltoys/blob/main/chladflow/chladflow.htm#L11">source code</a>,
+     <a href="https://www.shadertoy.com/view/3dS3zV">shadertoy</a>,
+     <a href="https://cineshader.com/view/3dS3zV">cineshader</a>)
+  </p>
+</footer>
 <script>
 var canvas = document.getElementById("glcanvas");
 var knotVector = [5.0, 3.0];
