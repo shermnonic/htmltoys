@@ -1,6 +1,9 @@
 # htmltoys
 
-Experience the toys live [here](https://shermnonic.github.io/htmltoys/).
+Small HTML5 canvas demos. Each in a single, self-contained .html file of only 
+a few hundred lines, with comments.
+
+[Click here to see the toys in action.](https://shermnonic.github.io/htmltoys/).
 
 Some screenshots:
 

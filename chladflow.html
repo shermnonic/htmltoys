@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<!-- www.386dx25.de 2019-2023 -->
+<html lang="en">
+<head><meta charset="utf-8"/>
+<title>Shadertoy player</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="author" content="386dx25, mnemonic@386dx25.de"/>
+<script id="shadertoy" type="x-shader/x-fragment">
+    // Raycast a sphere deformed by a flow from a trigonometric velocity field.
+
+    #define ISO 1.2   // isosurface value to visualize
+    #define EULER 3   // number of Euler steps in integrating the velocity field
+    
+    uniform float stepsize; // raycaster stepsize w.r.t. unit volume
+    uniform vec2 knots; // (e.g. =vec2(5.0,3.0)) knot numbers of Chladni pattern
+    
+    float alpha = 0.;  // rotation angle of superposition coefficients
+    
+    const float pi = 3.14159;
+    
+    void animate() 
+    {
+      // Uncomment for alternative animation
+      //float s=iTime*0.1;
+      //knots = 1.5*vec2(sin(1.3*s+.3)+0.5,cos(s)+1.0)+1.0*vec2(cos(s*.1+.7)+1.0);
+      alpha = iTime;
+    }
+    
+    // Gradient of Chladni 2D superposed eigenfunctions (arbitrary scaled)
+    vec2 dfun( vec2 uv, vec2 knots, vec2 c ) 
+    {
+      return 0.3*vec2( -c.x*sin(pi*knots.x*uv.x)*cos(pi*knots.y*uv.y)
+                       -c.y*sin(pi*knots.y*uv.x)*cos(pi*knots.x*uv.y),
+                       -c.x*cos(pi*knots.x*uv.x)*sin(pi*knots.y*uv.y)
+                       -c.y*cos(pi*knots.y*uv.x)*sin(pi*knots.x*uv.y) );
+    }
+    // Velocity field
+    vec3 vel( vec3 p ) 
+    {
+      // Superposition coefficients
+      vec2 c = mat2( cos(alpha), sin(alpha), 
+                    -sin(alpha), cos(alpha) ) * vec2(1.0,-1.0);
+      return vec3(dfun(p.xy,knots,c),0);
+    }
+    
+    // Integrate velocity field via Euler-steps (backwards)
+    vec3 integrate( vec3 x0 ) 
+    {
+      vec3 x = x0;
+      float h = 1.0 / float(EULER);
+      for( int k=0; k < EULER; k++ )
+        x = x - h * vel( x );
+      return (x-x0);
+    }
+    
+    // Scalar field, warped by a flow, i.e. integrated velocity field
+    float field( vec3 p ) 
+    {
+      p += integrate(p); // deformation
+      return dot(p,p); // sphere
+    }
+    
+    // Gradient of (deformed) scalar field via central differences
+    vec3 grad( vec3 p ) 
+    {
+      mat3 d = mat3(0.01);
+      return vec3( field(p-d[0]) - field(p+d[0]),
+                   field(p-d[1]) - field(p+d[1]),
+                   field(p-d[2]) - field(p+d[2]) );
+    }
+    
+    void mainImage( out vec4 fragColor, in vec2 fragCoord ) 
+    {
+      vec3 rb = vec3(1.);  // background color
+      vec3 rd = vec3(.9);  // diffuse color
+      vec3 rs = vec3(1.);  // specular color
+      
+      // normalized pixel coordinate
+      vec2 npc = 2.0*fragCoord/iResolution.xy - vec2(1.0,1.0);
+      npc.y /= iResolution.x/iResolution.y;
+      
+      // fade background radially, interlaced lines
+      float l = length(npc);
+      vec4 bg = vec4(vec3(1.-(1.-l)*rb*mod(fragCoord.y,3.0)), 1.0) * (1.0 - smoothstep(0.5,1.0,l));
+      
+      // skip raycasting beyond a central disc
+      if( l > .9 )
+      {
+        fragColor = bg;
+        return;
+      }
+       
+      animate();
+      
+      // raycaster
+      vec3 p0 = vec3(npc,-1.0);
+      vec3 eye = vec3(0.0,0.0,-2.0);
+      vec3 dir = normalize(p0 - eye);
+      vec4 dst = bg;
+      for( int i=0; i < 100; ++i )
+      {
+        float s = float(i)*stepsize;
+        if( s >= 1.0 )
+          break;
+          
+        vec3 p = p0 + s*dir;
+        float val = field(p);
+        
+        // isosurface, shaded
+        if( val < ISO )
+        {
+          vec3 l = normalize(vec3(0.5,-0.5,1.0));
+          vec3 n = normalize(grad(p));
+          vec3 h = normalize(0.5*(l+dir));
+          
+          float diff = max(0.0,dot(n,l));
+          float spec = pow(dot(h,n),42.0);      
+          
+          // artificial sky reflection
+          vec3 v = -dir;
+          vec3 r = v - 2.*dot(v,n)*n;
+          float h0 = max(r.y,0.0);
+          float h1 = max(-r.y,0.0);
+          vec3 c = cos(31.0*r);
+          vec3 refl = 1.2*vec3(1,1,1)*h0*c.x + 1.7*vec3(.8,.9,1)*h1;
+         
+          dst = .7*vec4(0.42*rd*diff + 1.0*rs*spec + 0.5*refl, 1.0);
+          break;
+        }
+      }
+      fragColor = dst;
+    }
+</script>
+<style>
+html, body {
+  text-align: center;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+@media (prefers-color-scheme: dark) {
+  body {
+    color: white;
+    background: #121212;
+  }
+  a { color: pink; }
+}
+footer {
+  position: absolute;
+  bottom: 0px;
+  left: 0px;
+  width: 100%;
+}
+#glcanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  margin: auto;
+  width: 100%;
+  height: auto;
+  z-index: -1;
+}
+</style>
+</head>
+<body>
+<h1 style="margin-bottom:0pt;">Chladni flower</h1>
+<div><span id="knotInfo"></span></div>
+<canvas id="glcanvas" width="384" height="384">
+  Sorry, WebGL required.
+</canvas>
+<footer>
+  <p>
+    by <a href="http://www.386dx25.de">386dx25.de</a>, 2019<br>
+    (<a href="https://github.com/shermnonic/htmltoys/blob/main/chladflow.htm#L8">source code</a>,
+      <a href="https://www.shadertoy.com/view/3dS3zV">shadertoy</a>,
+      <a href="https://cineshader.com/view/3dS3zV">cineshader</a>)
+  </p>
+</footer>
+<script type="text/javascript">    
+
+// Chladflow UI
+var knots = [5.0, 3.0];
+
+function setKnotVector(k) {
+  knots = k;
+  var info = document.getElementById("knotInfo");
+  if(info) {
+    info.innerHTML = "(" + knots[0].toFixed(2) + ", " + knots[1].toFixed(2) + ")";
+  }
+}
+
+function updateGL(gl, program) {
+  gl.uniform1f( gl.getUniformLocation(program,'stepsize'), 0.023 );
+  gl.uniform2f( gl.getUniformLocation(program,'knots'), knots[0], knots[1] );
+}
+
+function touchAndClickHandler(e) {  
+  e.preventDefault();
+  if(e.buttons || e.touches) {
+    let et = e.touches ? e.touches[0] : e;    
+    setKnotVector([ 14.0 * (et.clientX / window.innerWidth - 0.5),
+                    14.0 * (et.clientY / window.innerHeight - 0.5) ]);
+  }
+}
+
+document.addEventListener("touchstart", touchAndClickHandler);
+document.addEventListener("touchmove", touchAndClickHandler);
+document.addEventListener("mousedown", touchAndClickHandler);
+document.addEventListener("mousemove", touchAndClickHandler);
+
+
+// Minimal Shadertoy player
+// based on https://github.com/waldyrious/minimal-webgl
+
+const canvas = document.getElementById("glcanvas");
+
+window.onload = main;
+window.onresize = resize;
+
+function resize() {
+  var h = window.innerHeight;
+  var w = window.innerWidth;
+  // Auto-center & maximize to fit
+  canvas.style.width  = (h>w) ? "100%" : "auto";
+  canvas.style.height = (h>w) ? "auto" : "100%";
+  // Clamp resolution
+  canvas.width  = Math.min(Math.min(w,h), 768);
+  canvas.height = Math.min(Math.min(w,h), 768);
+}
+
+function main() {
+  try {    
+    var gl = canvas.getContext("webgl");
+    if (!gl) throw "";
+  } catch(ex) {
+    console.error("Failed to initialize WebGL: "+ex);
+    return;
+  }
+
+  var fragmentShaderToy = window.document.getElementById("shadertoy").text;
+
+  var prog = buildShaderProgram(gl, 
+    `
+    attribute vec2 vpos;
+    attribute float tc;
+    void main() {
+      gl_Position = vec4(vpos,0.0,1.0);
+    }
+    `,
+    `
+    precision mediump float;
+    uniform vec2  iResolution; 
+    uniform float iTime;
+    
+    <TOYCODE>
+    
+    void main() {
+      vec4 fragColor=vec4(0.0);
+      vec2 fragCoord=gl_FragCoord.xy;
+      mainImage(fragColor,fragCoord);
+      gl_FragColor = fragColor;
+    }
+    `
+    .replace('<TOYCODE>',fragmentShaderToy)
+  );  
+
+  var buf = createBuffer(gl, prog, 2, [-1,-1,  -1, 1,  1,-1,  1, 1 ]);
+  
+  function drawGL(t) {
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.uniform1f(gl.getUniformLocation(prog,'iTime'), t);
+    gl.uniform2fv(gl.getUniformLocation(prog,'iResolution'), [canvas.width, canvas.height]);
+    if(updateGL) updateGL(gl, prog);
+    buf.draw();
+  }
+
+  let timeStart;
+  function frame(timestamp) {
+    if(timestamp) {
+      timeStart = timeStart || timestamp;
+      drawGL((timestamp - timeStart)/1000);
+    }
+    window.requestAnimationFrame(frame);
+  }
+  
+  resize();
+  frame();
+}
+
+function buildShaderProgram(gl, vsrc, fsrc) {
+  var prog = gl.createProgram();
+
+  function compileShader(type, source) {
+    var shader = gl.createShader(type=="vertex" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    gl.attachShader(prog, shader);
+    return shader;
+  };
+  
+  vs = compileShader('vertex', vsrc);
+  fs = compileShader('fragment', fsrc)
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.error(`Link failed: ${gl.getProgramInfoLog(prog)}`);
+    console.error(`vs info-log: ${gl.getShaderInfoLog(vs)}`);
+    console.error(`fs info-log: ${gl.getShaderInfoLog(fs)}`);  
+    throw "Could not link the shader program!";
+  }
+  gl.useProgram(prog);
+  return prog;
+}
+
+function createBuffer(gl, prog, dim, verts) {
+  var buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+  var vpos = gl.getAttribLocation(prog, "vpos");
+  gl.enableVertexAttribArray(vpos);
+  gl.vertexAttribPointer(vpos, dim, gl.FLOAT, false, 0, 0);  
+  return {buffer: buffer, draw: function() {gl.drawArrays(gl.TRIANGLE_STRIP, 0, verts.length/2);} };
+}
+</script>
+</body>
+</html>
