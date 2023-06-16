@@ -18,19 +18,20 @@ Interactive game as a homage to Ryszard Winiarski (1936 - 2006).
 
 **[Saturn](https://shermnonic.github.io/htmltoys/saturn.html)**
 
-Non-interactive size-coding; based on Minsky's HAKMEM circle algorithm. Originally published as [dweet on dwitter](https://dwitter.net/d/26001). (Source is basically a dweet player.)
+Non-interactive size-coding; based on Minsky's HAKMEM circle algorithm. 
+The source is basically a dweet player. See [my original dweet on dwitter](https://dwitter.net/d/26001). 
 
 ![Screenshot of saturn](img/screenshots/saturn.jpg)
 
 **[Infiniballs](https://shermnonic.github.io/htmltoys/balls.html)**
 
-Interactive animation of an infinite number of balls at constant cost
+Interactive animation of an infinite number of balls at constant cost.
 
 Comes in three flavours:
 
 - [Infiniballs hue](https://shermnonic.github.io/htmltoys/balls.html?style=rainbow&mode=linear) in rainbow color (interactive)
 - [Infiniballs bw](https://shermnonic.github.io/htmltoys/balls.html?style=bw&mode=clelia) draws a Clelia curve (non-interactive)
-- [Infiniballs nmi](https://shermnonic.github.io/htmltoys/balls.html?style=nmi&mode=nmi) is a homage to [Jump from Public Enemy (1992)](http://www.pouet.net/prod.php?which=4210, https://youtu.be/DNpw4xrR_Bc?t=28) (non-interactive)
+- [Infiniballs nmi](https://shermnonic.github.io/htmltoys/balls.html?style=nmi&mode=nmi) is a homage to [Jump from Public Enemy (1992)](http://www.pouet.net/prod.php?which=4210) (see [video of original effect](https://youtu.be/DNpw4xrR_Bc?t=28)) (non-interactive)
 
 ![Screenshot of Infiniballs](img/screenshots/balls.jpg)
 
@@ -41,12 +42,12 @@ Interactive animation.
 > I love 1980's style 2D function plot algorithms; this one draws column wise using a 1-value z-buffer for hidden line removal ;-)
 
 
-
 ![Screenshot of Sinescans2](img/screenshots/sinescans.jpg)
 
 **[Chladni flower](https://shermnonic.github.io/htmltoys/chladflow.html)**
 
-Interactive animation of a raycasted sphere, deformed by integrating a sinusoid velocity field. Instead of just adding displacements, a vectorfield is integrated. By this little trick very large deformations can be applied at good quality. (Since the original version is on [shadertoy](https://www.shadertoy.com/view/3dS3zV), the source of this version here is basically a minimal shadertoy player.)
+Interactive animation of a raycasted sphere, deformed by integrating a sinusoid velocity field. Instead of just adding displacements, a vectorfield is integrated. By this little trick very large deformations can be applied at good quality. 
+The source is basically a minimal shadertoy player. See [my original version on shadertoy](https://www.shadertoy.com/view/3dS3zV).)
 
 ![Screenshot of Chladni flower](img/screenshots/chladflow.jpg)
 
@@ -61,7 +62,7 @@ Interactive animation. Try out the following preset kernels or paint your own:
 
 **[Phase space](https://shermnonic.github.io/htmltoys/phasespace/phasespace.html)**
 
-Music visualization after Monro and Pressing 1998.  This was once a new years greeting. Press pause at the right moment to find a nice shape defined by the sound wave. The music is a very old recording of me and my e-guitar. (*Phase space is currently the toy spread across multiple files. A single .html file version + .ogg music is in preparation.)
+Music visualization after Monro and Pressing 1998.  This was once a new years greeting. Press pause at the right moment to find a nice shape defined by the sound wave. The music is a very old recording of me and my e-guitar. (Phase space is currently the only toy spread across multiple files. A single .html file version + .ogg music is in preparation.)
 
 ![Screenshot of Phase space](img/screenshots/phasespace.jpg)
 
