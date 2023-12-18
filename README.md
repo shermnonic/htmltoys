@@ -10,6 +10,14 @@ Each toy comes in a single, self-contained .html file. The source never exceeds 
 
 ## The toys
 
+**[XorXor](https://shermnonic.github.io/htmltoys/xorxor.html)**
+
+Generative Christmas cards 2023.
+
+![Screenshot of xorxor](img/screenshots/xorxor.png)
+
+
+
 **[Winiarski](https://shermnonic.github.io/htmltoys/winiarski.html)**
 
 Interactive game as a homage to Ryszard Winiarski (1936 - 2006).

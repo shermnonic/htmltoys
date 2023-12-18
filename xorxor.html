@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<!-- www.386dx25.de 2023 -->
+<html lang=en>
+<head>
+  <meta charset=utf-8>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="author" content="386dx25, mnemonic@386dx25.de"/>
+  <title>Xor Xor Animation</title>
+  <style>
+    body {
+      text-align: center;
+    }
+    canvas { 
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
+    }
+    #screen {
+      width: 100%;
+      max-width: 1024px;
+      border: solid 1px black;
+    }
+  </style>
+</head>
+<body>
+  <p><a href="https://386dx25.de/"><img width=37px height=37px alt="x-shaped logo" src="data:image/gif;base64,R0lGODlhJQAlAKEBAAAAAP///////////yH5BAEKAAIALAAAAAAlACUAAAKklI+py+1/gJSwxglCANZmDW4d9IUa92AUU5qoooLr0spNfb6wKbJ8zqrpdr+XaiIbEl2xZJJUxOWAJJzkt8lMPEJpdju6TnnKkeAq/oLNiKO7zDZgXHFfsU4jw+Of93nPdZSVhSeX5kRo1qQXMlM1V6TnIYN1+JTS14VEBpX0ZnniYHmUILUH6thWacd0w5QaEXWj0tlaGKsHGNa4dmuI4RvMVgAAOw=="/></a></p>
+  <p>
+    <a href="?num=1&pattern=2&clear=false">0</a>
+    <a href="?num=3&pattern=1&clear=false">1</a>
+    <a href="?num=12&pattern=5&clear=true">2</a>
+  </p>
+  <canvas id="screen" width=160 height=120></canvas>
+  <script type="module">
+    function getParamsFromQueryString() {
+      let input = new URLSearchParams(document.location.search.substring(1));
+      if(input.get("num") && input.get("pattern") && input.get("clear")) {
+        console.log(input.get("clear"));
+        return {
+          numSprites : parseInt(input.get("num")),
+          pattern : parseInt(input.get("pattern")),
+          clearSprites : input.get("clear") === 'true'
+        }
+      }
+      return null;
+    }
+
+    const demoParams = getParamsFromQueryString() || {
+      numSprites : 3,
+      pattern: 1,
+      clearSprites : false
+    };
+    
+    console.log(demoParams);
+  
+    var Screen = function(width, height) {
+      this.width = width;
+      this.height = height;
+      this.data = new Uint8ClampedArray(width*height);
+    };
+
+    // @param module defines fill pattern
+    var Sprite = function(width, height, module=demoParams.pattern) {
+      this.width = width;
+      this.height = height;
+      this.data = new Uint8ClampedArray(width*height);
+
+      this.x0 = Math.ceil(width/2);
+      this.y0 = Math.ceil(height/2);
+
+      // Draw striped disc
+      const cx = (width-1)/2.0;
+      const cy = (height-1)/2.0;
+      const rr = (width/2)*(width/2);
+      for(let y=0; y < height; ++y) {
+        for(let x=0; x < width; ++x) {
+          let sqdist = (x-cx)*(x-cx) + (y-cy)*(y-cy);
+          let fill = (module < 2) ? 1 : (y % module);
+          this.data[y*width+x] = (sqdist < rr) ? fill : 0;
+        }
+      }
+    };
+    
+    function xorblit(sprite, screen) {
+      for(let y=0; y < sprite.height; ++y) {
+        let dst = screen.width*(Math.floor(sprite.y0)+y) + Math.floor(sprite.x0);
+        for(let x=0; x < sprite.width; ++x, ++dst) {
+          screen.data[dst] = sprite.data[y*sprite.width+x] ^ screen.data[dst];
+        }
+      }
+    }
+    
+    function blit2rgba(screen, rgba) {
+      const portrait = false;
+      let src=0;
+      for (let y=0; y < screen.height; ++y) {
+        for (let x=0; x < screen.width; ++x, ++src) {
+          let dst = portrait ? (x*screen.height + (screen.height-y-1))*4 : src*4;
+          let bit = (screen.data[src] > 0) ? 255 : 0;
+          rgba[dst + 0] = bit;
+          rgba[dst + 1] = bit;
+          rgba[dst + 2] = bit;
+          rgba[dst + 3] = 255;
+        }
+      }
+    }
+
+    var Animation = function(renderFrameFun) {
+      this.timeOfStart = null;
+      this.timeLastRenderCall = null;
+      this.renderFrame = renderFrameFun;
+
+      this.update = (timestamp) => {
+        const dt = timestamp - this.timeLastRenderCall;
+        if(dt > 40) { // 40ms = 25fps
+          this.timeLastRenderCall = timestamp;
+          this.renderFrame(dt);
+        }
+        window.requestAnimationFrame(this.update);
+      };
+
+      this.launch = function() {
+        window.requestAnimationFrame((timestamp) => {
+          this.timeOfStart = timestamp;
+          this.timeLastRenderCall = timestamp;
+          window.requestAnimationFrame(this.update);
+        });
+      };
+    };
+
+    function runDemo(timestamp) {
+      const canvas = document.getElementById("screen");
+      const ctx = canvas.getContext('2d');
+      
+      const SCREEN_WIDTH = canvas.width;
+      const SCREEN_HEIGHT = canvas.height;
+
+      const rgba = new Uint8ClampedArray(SCREEN_WIDTH * SCREEN_HEIGHT * 4);
+
+      var screen = new Screen(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+      // Draw striped background
+      let dst=0;
+      for (let y=0; y < screen.height; ++y) {
+        for (let x=0; x < screen.width; ++x, ++dst) {
+          screen.data[dst] = x%2;
+        }
+      }
+
+      var sprites = [];
+      {
+        let sprite = new Sprite(32, 32);
+        sprite.x0 = screen.width/2-sprite.width/2;
+        sprite.y0 = screen.height/2-sprite.height/2;
+        sprite.vx = 1; // Velocity
+        sprite.vy = 1;
+        sprites.push(sprite);
+      }
+      for(let i=1; i < demoParams.numSprites; ++i) {
+        let sprite = new Sprite(16, 16);
+        sprite.x0 = sprite.width/2 + Math.floor(Math.random()*(screen.width - sprite.width));
+        sprite.y0 = sprite.height/2 + Math.floor(Math.random()*(screen.height - sprite.height));
+        sprite.vx = (Math.random() > .5) ? 1 : -1;
+        sprite.vy = (Math.random() > .5) ? 1 : -1;
+        sprites.push(sprite);
+      }
+
+      function move(sprite) {
+        // Borders to bounce off from
+        const xmax = screen.width - sprite.width;
+        const xmin = 0;
+        const ymax = screen.height - sprite.height;
+        const ymin = 0;
+      
+        sprite.x0 += sprite.vx;
+        if(sprite.x0 >= xmax) { sprite.x0 = xmax-1; sprite.vx *= -1; }
+        if(sprite.x0 <= xmin) { sprite.x0 = xmin+1; sprite.vx *= -1; }
+        sprite.y0 += sprite.vy;
+        if(sprite.y0 >= ymax) { sprite.y0 = ymax-1; sprite.vy *= -1; }
+        if(sprite.y0 <= ymin) { sprite.y0 = ymin+1; sprite.vy *= -1; }
+      }
+
+      var pause = false;
+
+      var animation = new Animation(function(timestamp) {
+        if(!pause) {
+          sprites.forEach((sprite) => {
+            // Delete sprite at old position
+            if(demoParams.clearSprites)
+              xorblit(sprite, screen);
+
+            // Draw sprite at new position
+            move(sprite);
+            xorblit(sprite, screen);
+          });
+        }
+
+        // Blit to canvas
+        blit2rgba(screen, rgba);
+        ctx?.putImageData(new ImageData(rgba, SCREEN_WIDTH, SCREEN_HEIGHT), 0, 0);
+      });
+
+      // Draw sprite initially
+      sprites.forEach((sprite) => xorblit(sprite, screen));
+      
+      canvas.addEventListener("click", function(e) { pause=!pause; }, false)
+
+      animation.launch();
+    }
+    
+    runDemo();
+  </script>
+</body>
+</html>
