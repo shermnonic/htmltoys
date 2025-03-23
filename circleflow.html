@@ -23,6 +23,12 @@
             left: 0px;
         }
 
+        #parameters {
+            position: absolute;
+            width: 100%;
+            bottom: 4em;
+        }
+
         footer {
             width: 100%;
             position: absolute;
@@ -53,6 +59,7 @@
         <h1>Circle Flow</h1>
     </header>
     <canvas id="figure" width=500 height=500></canvas>
+    <div id="parameters"></div>
     <footer>
         <p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2025</p>
     </footer>
@@ -92,7 +99,7 @@
                     Math.sin(2 * Math.PI * index / n)
                 ]);
 
-            const center = [canvas.width / 2, canvas.height / 2];
+            const center = [canvas.width / 2, 0.8*canvas.height / 2];
             const scale = 100;
 
             drawLineStrip(ctx, circlePoints, center, scale);
@@ -109,6 +116,15 @@
         function randomizeParameters(canvas) {
             a1 = getRandomFlowParameters();
             a2 = getRandomFlowParameters();
+
+            let element = document.getElementById('parameters');
+
+            function formatParameters(a) {
+                const s = (a) => a.map((x) => x.toFixed(3)).join(", ");
+                return "(" + s(a1.slice(0,4)) + "<br>" + s(a1.slice(4,8)) + ")";
+            }
+
+            element.innerHTML = formatParameters(a1) + "<br>-<br>" + formatParameters(a2);
         }
 
         randomizeParameters();
