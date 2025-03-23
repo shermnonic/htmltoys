@@ -12,14 +12,38 @@
             text-align: center;
             padding: 0;
             margin: 0;
-            overflow: hidden;            
+            overflow: hidden;
         }
+
         canvas {
             width: 100%;
             height: 100%;
             position: absolute;
             top: 0px;
             left: 0px;
+        }
+
+        footer {
+            width: 100%;
+            position: absolute;
+            bottom: 0px;
+            margin: auto;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                color: white;
+                background: #121212;
+
+            }
+
+            a {
+                color: pink;
+            }
+
+            canvas {
+                filter: invert(100%);
+            }
         }
     </style>
 </head>
@@ -29,11 +53,14 @@
         <h1>Circle Flow</h1>
     </header>
     <canvas id="figure" width=500 height=500></canvas>
+    <footer>
+        <p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2025</p>
+    </footer>
     <script type="module">
 
         function drawLineStrip(ctx, points, center, scale) {
 
-            const P = points.map((p) => [scale*p[0]+center[0], scale*p[1]+center[1]]);
+            const P = points.map((p) => [scale * p[0] + center[0], scale * p[1] + center[1]]);
 
             ctx.beginPath();
             ctx.moveTo(P[0][0], P[0][1]);
@@ -59,7 +86,7 @@
             const ctx = canvas.getContext('2d');
 
             const n = 90;
-            const circlePoints = new Array(n).fill([0,0]).map(
+            const circlePoints = new Array(n).fill([0, 0]).map(
                 (value, index) => [
                     Math.cos(2 * Math.PI * index / n),
                     Math.sin(2 * Math.PI * index / n)
@@ -70,27 +97,35 @@
 
             drawLineStrip(ctx, circlePoints, center, scale);
             const m = 10.0;
-            const alphas = new Array(m).fill(0).map((_, index) => index / (m-1));
-            for(const alpha of alphas) {
-                const a = a1.map((value, index) => (1-alpha) * value + alpha * a2[index]);
+            const alphas = new Array(m).fill(0).map((_, index) => index / (m - 1));
+            for (const alpha of alphas) {
+                const a = a1.map((value, index) => (1 - alpha) * value + alpha * a2[index]);
                 drawLineStrip(ctx, circlePoints.map((point) => advect(point, a)), center, scale);
             }
         }
 
-        const a1 = getRandomFlowParameters();
-        const a2 = getRandomFlowParameters();
+        var a1, a2;
+
+        function randomizeParametersAndPlotFigure(canvas) {
+            a1 = getRandomFlowParameters();
+            a2 = getRandomFlowParameters();
+            plotFigure(canvas, a1, a2);
+        }
 
         function resize() {
-            const canvas = document.getElementById("figure");
             const border = 1;
+            const canvas = document.getElementById("figure");
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            plotFigure(canvas, a1, a2);
+            randomizeParametersAndPlotFigure(canvas);
         }
 
         resize();
 
         window.addEventListener('resize', resize, false);
+
+        const canvas = document.getElementById("figure");
+        canvas.onpointerdown = resize;
 
     </script>
 </body>
