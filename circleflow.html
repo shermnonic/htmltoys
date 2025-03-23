@@ -121,7 +121,7 @@
 
             function formatParameters(a) {
                 const s = (a) => a.map((x) => x.toFixed(3)).join(", ");
-                return "(" + s(a1.slice(0,4)) + "<br>" + s(a1.slice(4,8)) + ")";
+                return "(" + s(a.slice(0,4)) + "<br>" + s(a.slice(4,8)) + ")";
             }
 
             element.innerHTML = formatParameters(a1) + "<br>-<br>" + formatParameters(a2);
