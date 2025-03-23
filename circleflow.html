@@ -106,18 +106,19 @@
 
         var a1, a2;
 
-        function randomizeParametersAndPlotFigure(canvas) {
+        function randomizeParameters(canvas) {
             a1 = getRandomFlowParameters();
             a2 = getRandomFlowParameters();
-            plotFigure(canvas, a1, a2);
         }
+
+        randomizeParameters();
 
         function resize() {
             const border = 1;
             const canvas = document.getElementById("figure");
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            randomizeParametersAndPlotFigure(canvas);
+            plotFigure(canvas, a1, a2);
         }
 
         resize();
@@ -125,7 +126,7 @@
         window.addEventListener('resize', resize, false);
 
         const canvas = document.getElementById("figure");
-        canvas.onpointerdown = resize;
+        canvas.onpointerdown = () => { randomizeParameters(); resize(); };
 
     </script>
 </body>
