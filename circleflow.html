@@ -10,6 +10,16 @@
     <style>
         body {
             text-align: center;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;            
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0px;
+            left: 0px;
         }
     </style>
 </head>
@@ -21,9 +31,8 @@
     <canvas id="figure" width=500 height=500></canvas>
     <script type="module">
 
-        function drawLineStrip(ctx, points) {
-            const center = [250, 250];
-            const scale = 100;
+        function drawLineStrip(ctx, points, center, scale) {
+
             const P = points.map((p) => [scale*p[0]+center[0], scale*p[1]+center[1]]);
 
             ctx.beginPath();
@@ -46,7 +55,7 @@
             return new Array(8).fill(0.0).map(() => Math.random() * 2 - 1);
         }
 
-        function plotFigure(canvas) {
+        function plotFigure(canvas, a1, a2) {
             const ctx = canvas.getContext('2d');
 
             const n = 90;
@@ -56,19 +65,33 @@
                     Math.sin(2 * Math.PI * index / n)
                 ]);
 
-            const a1 = getRandomFlowParameters();
-            const a2 = getRandomFlowParameters();
+            const center = [canvas.width / 2, canvas.height / 2];
+            const scale = 100;
 
-            drawLineStrip(ctx, circlePoints);
+            drawLineStrip(ctx, circlePoints, center, scale);
             const m = 10.0;
             const alphas = new Array(m).fill(0).map((_, index) => index / (m-1));
             for(const alpha of alphas) {
                 const a = a1.map((value, index) => (1-alpha) * value + alpha * a2[index]);
-                drawLineStrip(ctx, circlePoints.map((point) => advect(point, a)));
+                drawLineStrip(ctx, circlePoints.map((point) => advect(point, a)), center, scale);
             }
         }
 
-        plotFigure(document.getElementById("figure"));
+        const a1 = getRandomFlowParameters();
+        const a2 = getRandomFlowParameters();
+
+        function resize() {
+            const canvas = document.getElementById("figure");
+            const border = 1;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            plotFigure(canvas, a1, a2);
+        }
+
+        resize();
+
+        window.addEventListener('resize', resize, false);
+
     </script>
 </body>
 
