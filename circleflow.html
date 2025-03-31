@@ -142,7 +142,7 @@
         window.addEventListener('resize', resize, false);
 
         const canvas = document.getElementById("figure");
-        canvas.onpointerdown = () => { randomizeParameters(); resize(); };
+        canvas.onpointerdown = (event) => { if(event.button==0) { randomizeParameters(); resize(); } };
 
     </script>
 </body>
