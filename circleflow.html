@@ -12,7 +12,7 @@
             text-align: center;
             padding: 0;
             margin: 0;
-            overflow: hidden;
+            /*overflow: hidden;*/
         }
 
         canvas {
@@ -60,6 +60,7 @@
     </header>
     <canvas id="figure" width=500 height=500></canvas>
     <div id="parameters"></div>
+    <div id="history"></div>
     <footer>
         <p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2025</p>
     </footer>
@@ -74,6 +75,47 @@
             this.moveTo = function(x, y) { this.context.moveTo(x, y); }
             this.lineTo = function(x, y) { this.context.lineTo(x, y); }
             this.stroke = function() { this.context.stroke(); }
+        }
+
+        function SvgPathRenderer(width, height, node) {
+            this.width = width;
+            this.height = height;
+
+            this.createSvg = function(width, height) {
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('fill', 'none');
+                svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+                svg.setAttribute('stroke', 'black');
+                return svg;
+            };
+            this.svg = this.createSvg(width, height);
+
+            node.appendChild(this.svg);
+
+            this.currentPath = null;
+            this.currentPathShape = "";
+            
+            this.beginPath = function() {
+                if(this.currentPath == null) {
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('stroke-linecap', 'round');
+                    path.setAttribute('stroke-linejoin', 'round');
+                    path.setAttribute('stroke-width', '2');
+                    this.currentPath = path;
+                }                
+            };
+
+            this.stroke = function() { 
+                if(this.currentPath != null && this.currentPathShape != "") {
+                    this.currentPath.setAttribute('d', this.currentPathShape);
+                    this.svg.appendChild(this.currentPath);
+                    this.currentPath = null;
+                    this.currentPathShape = "";
+                }
+            };
+
+            this.moveTo = function(x, y) { this.currentPathShape += 'M' + [x,y].map((v) => v.toFixed(1)).join(' '); }
+            this.lineTo = function(x, y) { this.currentPathShape += ' L' + [x,y].map((v) => v.toFixed(1)).join(' '); }            
         }
 
         function drawLineStrip(renderer, points, center, scale) {
@@ -139,12 +181,16 @@
         randomizeParameters();
 
         function resize() {
-            const border = 1;
             const canvas = document.getElementById("figure");
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             const renderer = new CanvasPathRenderer(canvas);
             plotFigure(renderer, a1, a2);
+
+            const historyEntry = document.createElement('div');
+            const svgRenderer = new SvgPathRenderer(canvas.width, canvas.height, historyEntry);
+            plotFigure(svgRenderer, a1, a2);
+            document.getElementById('history').appendChild(historyEntry);
         }
 
         resize();
