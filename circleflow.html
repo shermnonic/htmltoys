@@ -65,15 +65,26 @@
     </footer>
     <script type="module">
 
-        function drawLineStrip(ctx, points, center, scale) {
+        function CanvasPathRenderer(canvas) {
+            this.context = canvas.getContext("2d");
+            this.context.reset();
+            this.width = canvas.width;
+            this.height = canvas.height;
+            this.beginPath = function() { this.context.beginPath(); }
+            this.moveTo = function(x, y) { this.context.moveTo(x, y); }
+            this.lineTo = function(x, y) { this.context.lineTo(x, y); }
+            this.stroke = function() { this.context.stroke(); }
+        }
+
+        function drawLineStrip(renderer, points, center, scale) {
 
             const P = points.map((p) => [scale * p[0] + center[0], scale * p[1] + center[1]]);
 
-            ctx.beginPath();
-            ctx.moveTo(P[0][0], P[0][1]);
-            P.forEach((point) => ctx.lineTo(point[0], point[1]));
-            ctx.lineTo(P[0][0], P[0][1]);
-            ctx.stroke();
+            renderer.beginPath();
+            renderer.moveTo(P[0][0], P[0][1]);
+            P.forEach((point) => renderer.lineTo(point[0], point[1]));
+            renderer.lineTo(P[0][0], P[0][1]);
+            renderer.stroke();
         }
 
         function advect(point, flowParameters) {
@@ -89,9 +100,7 @@
             return new Array(8).fill(0.0).map(() => Math.random() * 2 - 1);
         }
 
-        function plotFigure(canvas, a1, a2) {
-            const ctx = canvas.getContext('2d');
-
+        function plotFigure(renderer, a1, a2) {
             const n = 90;
             const circlePoints = new Array(n).fill([0, 0]).map(
                 (value, index) => [
@@ -99,15 +108,15 @@
                     Math.sin(2 * Math.PI * index / n)
                 ]);
 
-            const center = [canvas.width / 2, 0.8*canvas.height / 2];
+            const center = [renderer.width / 2, 0.8*renderer.height / 2];
             const scale = 100;
 
-            drawLineStrip(ctx, circlePoints, center, scale);
+            drawLineStrip(renderer, circlePoints, center, scale);
             const m = 10.0;
             const alphas = new Array(m).fill(0).map((_, index) => index / (m - 1));
             for (const alpha of alphas) {
                 const a = a1.map((value, index) => (1 - alpha) * value + alpha * a2[index]);
-                drawLineStrip(ctx, circlePoints.map((point) => advect(point, a)), center, scale);
+                drawLineStrip(renderer, circlePoints.map((point) => advect(point, a)), center, scale);
             }
         }
 
@@ -134,7 +143,8 @@
             const canvas = document.getElementById("figure");
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            plotFigure(canvas, a1, a2);
+            const renderer = new CanvasPathRenderer(canvas);
+            plotFigure(renderer, a1, a2);
         }
 
         resize();
