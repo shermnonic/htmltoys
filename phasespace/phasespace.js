@@ -2,7 +2,7 @@
   Monroe&Pressing phase space visualization with WebGL.
   
   \date October 2013
-  \author Max Hermann (http://www.386dx25.de)
+  \author Max Hermann (https://386dx25.de)
 */
 "use strict";
 

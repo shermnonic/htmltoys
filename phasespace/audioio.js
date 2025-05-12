@@ -2,7 +2,7 @@
   Minimalistic HTML5 Audio library.
   
   \date November 2012
-  \author Max Hermann (http://www.386dx25.de)
+  \author Max Hermann (https://386dx25.de)
 */
 
 function createAudioIO( audioEl ) {
