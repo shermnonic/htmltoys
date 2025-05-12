@@ -21,12 +21,28 @@
             position: absolute;
             top: 0px;
             left: 0px;
+            z-index: -1;
         }
 
         #parameters {
             position: absolute;
             width: 100%;
             bottom: 4em;
+        }
+
+        #history {
+            width: 15%;
+        }
+
+        .card {
+            background: #4690a3;
+        }
+        .card:hover {
+            background: #53b8d1;
+        }
+
+        #controls {
+            z-index: 10;
         }
 
         footer {
@@ -58,8 +74,11 @@
     <header>
         <h1>Circle Flow</h1>
     </header>
-    <canvas id="figure" width=500 height=500></canvas>
+    <canvas id="figure" width=500 height=500>
+        Drawing of multiple curves, interpolating two circles deformed by a vectorfield.
+    </canvas>
     <div id="parameters"></div>
+    <div id="controls"></div>
     <div id="history"></div>
     <footer>
         <p>by <a href="http://www.386dx25.de">386dx25.de</a>, 2025</p>
@@ -77,7 +96,7 @@
             this.stroke = function() { this.context.stroke(); }
         }
 
-        function SvgPathRenderer(width, height, node) {
+        function SvgPathRenderer(width, height) {
             this.width = width;
             this.height = height;
 
@@ -90,8 +109,6 @@
             };
             this.svg = this.createSvg(width, height);
 
-            node.appendChild(this.svg);
-
             this.currentPath = null;
             this.currentPathShape = "";
             
@@ -100,7 +117,7 @@
                     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     path.setAttribute('stroke-linecap', 'round');
                     path.setAttribute('stroke-linejoin', 'round');
-                    path.setAttribute('stroke-width', '2');
+                    path.setAttribute('stroke-width', '1.5');
                     this.currentPath = path;
                 }                
             };
@@ -162,43 +179,110 @@
             }
         }
 
-        var a1, a2;
+        var pairOfFlowParameters = {
+            a1: getRandomFlowParameters(),
+            a2: getRandomFlowParameters(),
 
-        function randomizeParameters(canvas) {
-            a1 = getRandomFlowParameters();
-            a2 = getRandomFlowParameters();
+            randomize: function(canvas) {
+                this.a1 = getRandomFlowParameters();
+                this.a2 = getRandomFlowParameters();
+            },
 
-            let element = document.getElementById('parameters');
+            set: function(newA1, newA2) {
+                this.a1 = newA1;
+                this.a2 = newA2;
+            },
 
-            function formatParameters(a) {
-                const s = (a) => a.map((x) => x.toFixed(3)).join(", ");
-                return "(" + s(a.slice(0,4)) + "<br>" + s(a.slice(4,8)) + ")";
+            updateUI: function() {
+                let element = document.getElementById('parameters');
+                if(element) {
+                    function format(a) {
+                        const s = (a) => a.map((x) => x.toFixed(3)).join(", ");
+                        return "(" + s(a.slice(0,4)) + "<br>" + s(a.slice(4,8)) + ")";
+                    }
+                    element.innerHTML = format(this.a1) + "<br>-<br>" + format(this.a2);                    
+                }
             }
+        };
 
-            element.innerHTML = formatParameters(a1) + "<br>-<br>" + formatParameters(a2);
-        }
-
-        randomizeParameters();
-
-        function resize() {
+        function redraw() {
             const canvas = document.getElementById("figure");
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             const renderer = new CanvasPathRenderer(canvas);
-            plotFigure(renderer, a1, a2);
-
-            const historyEntry = document.createElement('div');
-            const svgRenderer = new SvgPathRenderer(canvas.width, canvas.height, historyEntry);
-            plotFigure(svgRenderer, a1, a2);
-            document.getElementById('history').appendChild(historyEntry);
+            plotFigure(renderer, pairOfFlowParameters.a1, pairOfFlowParameters.a2);
+            pairOfFlowParameters.updateUI();
         }
 
-        resize();
+        function plotFigureAsSvg() {
+            const svgRenderer = new SvgPathRenderer(700, 700);
+            plotFigure(svgRenderer, pairOfFlowParameters.a1, pairOfFlowParameters.a2);
+            return svgRenderer.svg;
+        }
 
-        window.addEventListener('resize', resize, false);
+        function createDownloadLinkFromSvg(svgElement) {
+            // https://medium.com/code-sections/exporting-svg-and-png-out-of-your-printable-html-elements-45bda7d618a2
+            var dataUrl = 'data:image/svg+xml;charset=utf-8,' +
+                new XMLSerializer().serializeToString(svgElement)
+                .replace(/#/g, '%23').replace(/\n/g, '%0A');
+            var link = document.createElement('a');
+            link.download = 'drawing.svg';
+            link.href = dataUrl;
+            return link;
+        }        
 
-        const canvas = document.getElementById("figure");
-        canvas.onpointerdown = (event) => { if(event.button==0) { randomizeParameters(); resize(); } };
+
+        redraw();
+
+        window.addEventListener('resize', redraw, false);
+
+
+        var history = [];
+
+        function addCurrentDrawingToHistory() {
+            const currentIndex = history.length;
+            history.push([pairOfFlowParameters.a1, pairOfFlowParameters.a2]);
+
+            const svg = plotFigureAsSvg();
+            const card = document.createElement('div');
+            card.classList.add('card');
+            card.onclick = function() {
+                pairOfFlowParameters.set(history[currentIndex][0], history[currentIndex][1]);
+                redraw();
+            };
+            card.appendChild(svg);
+            document.getElementById('history').appendChild(card);
+        }
+
+
+        const controls = document.getElementById('controls');
+        if(controls) {
+            function addButton(label, fun) {
+                const button = document.createElement('button');
+                button.innerHTML = label;
+                controls.appendChild(button);
+                button.onclick = fun;
+            }
+            
+            addButton("Randomize", 
+                function() { 
+                    pairOfFlowParameters.randomize(); 
+                    pairOfFlowParameters.updateUI();
+                    redraw(); 
+                });
+
+            addButton("Download SVG", 
+                function() {
+                    createDownloadLinkFromSvg(plotFigureAsSvg()).click();
+                }
+            );
+
+            addButton("Add to history",
+                function() {
+                    addCurrentDrawingToHistory();
+                }
+            );
+        }
 
     </script>
 </body>
