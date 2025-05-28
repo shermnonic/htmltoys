@@ -10,6 +10,12 @@ Each toy comes in a single, self-contained .html file. The source never exceeds 
 
 ## The toys
 
+**[Circle Flow](https://shermnonic.github.io/htmltoys/circleflow.html)**
+
+Two flow fields interpolated at 10 steps and applied to a circle.
+
+![Screenshot of xorxor](img/screenshots/circleflow.png)
+
 **[XorXor](https://shermnonic.github.io/htmltoys/xorxor.html)**
 
 Generative Christmas cards 2023.
