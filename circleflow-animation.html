@@ -80,8 +80,57 @@
 
         // Interpolation
 
-        function lerpFlowParameters(a1, a2, alpha) {
+        function lerpVector(a1, a2, alpha) {
             return a1.map((value, index) => (1 - alpha) * value + alpha * a2[index]);
+        }
+
+        function interpolateLinear(knots, t) {
+            const alpha = t - Math.floor(t); // fractional part in [0,1)
+            const i = Math.floor(t) % knots.length;
+
+            const p1 = knots[i];
+            const p2 = knots[(i + 1) % knots.length];
+            
+            return lerpVector(p1, p2, alpha);
+        }
+
+        // Catmull-Rom spline
+
+        function vectorTimesScalar(v, s) {
+            return v.map((value) => s * value);
+        }
+
+        function splineTangentCatmullRom(p0, p1, p2) {
+            return p2.map((p2_value_at_index, index) => (p2_value_at_index - p0[index]) * 0.5);
+        }
+
+        function splineInUnitInterval(p0, p1, m0, m1, t) {
+            const tt = t*t;
+            const ttt = tt*t;
+
+            const c0 = 2*ttt - 3*tt + 1;
+            const c1 = ttt - 2*tt + t;
+            const c2 = -2*ttt + 3*tt;
+            const c3 = ttt - tt;
+            
+            return Array(p0.length).fill(0.0).map((_, i) => 
+                c0*p0[i] + c1*m0[i] + c2*p1[i] + c3*m1[i])
+        }
+
+        function interpolateCurve(knots, t)
+        {
+            const alpha = t - Math.floor(t); // fractional part in [0,1)
+            const i = Math.floor(t) % knots.length;
+
+            const p0 = knots[(knots.length + i - 1) % knots.length];
+            const p1 = knots[i];
+            const p2 = knots[(i + 1) % knots.length];
+            const p3 = knots[(i + 2) % knots.length];
+
+            const m1 = splineTangentCatmullRom(p0, p1, p2);
+            const m2 = splineTangentCatmullRom(p1, p2, p3);
+
+            return splineInUnitInterval(p1, p2, m1, m2, alpha);
         }
 
         // Drawing functions
@@ -138,13 +187,7 @@
 
             t = t/500; // speed
 
-            const alpha = t - Math.floor(t); // fractional part in [0,1)
-            const i = Math.floor(t) % knots.length;
-
-            const a1 = knots[i];
-            const a2 = knots[(i + 1) % knots.length];
-            
-            const flow = lerpFlowParameters(a1, a2, alpha);
+            const flow = interpolateCurve(knots, t);
             flow[0] = flow[1] = 0; // no translation
             drawDeformedLineStrip(renderer, points, flow);
         }
