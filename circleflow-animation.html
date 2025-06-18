@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<!-- 386dx25.de 2025 -->
+<html lang=en>
+
+<head>
+    <meta charset=utf-8>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="author" content="386dx25, mnemonic@386dx25.de" />
+    <title>Circle Flow</title>
+    <style>
+        body {
+            text-align: center;
+            padding: 0;
+            margin: 0;
+            /*overflow: hidden;*/
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            z-index: -1;
+        }
+
+        footer {
+            width: 100%;
+            position: absolute;
+            bottom: 0px;
+            margin: auto;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            body {
+                color: white;
+                background: #121212;
+
+            }
+
+            a {
+                color: pink;
+            }
+
+            canvas {
+                filter: invert(100%);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Circle Flow</h1>
+    </header>
+    <canvas id="animation" width=500 height=500>
+        Animation of a circle deformed by a vectorfield.
+    </canvas>
+    <footer>
+        <p>by <a href="https://386dx25.de">386dx25.de</a>, 2025<br>
+            (<a href="https://github.com/shermnonic/htmltoys/blob/main/circleflow.html">source code</a>)</p>
+    </footer>
+
+    <script type="module">
+        function CanvasPathRenderer(canvas) {
+            this.context = canvas.getContext("2d");
+            this.context.reset();
+            this.width = canvas.width;
+            this.height = canvas.height;
+            this.beginPath = function() { this.context.beginPath(); }
+            this.moveTo = function(x, y) { this.context.moveTo(x, y); }
+            this.lineTo = function(x, y) { this.context.lineTo(x, y); }
+            this.stroke = function() { this.context.stroke(); }
+        }
+
+        function drawLineStrip(renderer, points, center, scale) {
+
+            const P = points.map((p) => [scale * p[0] + center[0], scale * p[1] + center[1]]);
+
+            renderer.beginPath();
+            renderer.moveTo(P[0][0], P[0][1]);
+            P.forEach((point) => renderer.lineTo(point[0], point[1]));
+            renderer.lineTo(P[0][0], P[0][1]);
+            renderer.stroke();
+        }
+
+        function advect(point, flowParameters) {
+            const [x, y] = point;
+            const xy = x * y;
+            const a = flowParameters;
+            const x_dash = a[0] + a[1] * x + a[2] * x + a[6] * x * x + a[7] * xy;
+            const y_dash = a[4] + a[4] * x + a[5] * y + a[6] * xy + a[7] * y * y;
+            return [x_dash, y_dash];
+        }
+
+        function getRandomFlowParameters() {
+            return new Array(8).fill(0.0).map(() => Math.random() * 2 - 1);
+        }
+
+
+        function createPointsOnCircle(n = 90) {
+            return new Array(n).fill([0, 0]).map(
+                (value, index) => [
+                    Math.cos(2 * Math.PI * index / n),
+                    Math.sin(2 * Math.PI * index / n)
+                ]);
+        }
+
+        function drawDeformedLineStrip(renderer, points, flowParameters) {
+            const center = [renderer.width / 2, 0.8*renderer.height / 2];
+            const scale = 100;            
+            drawLineStrip(renderer, points.map((point) => advect(point, flowParameters)), center, scale);
+        }
+
+        function lerpFlowParameters(a1, a2, alpha) {
+            return a1.map((value, index) => (1 - alpha) * value + alpha * a2[index]);
+        }
+
+        const canvas = document.getElementById("animation");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const renderer = new CanvasPathRenderer(canvas);
+
+        const points = createPointsOnCircle();
+        const knots = new Array(100).fill(0).map((_, index) => getRandomFlowParameters());
+
+        function drawFrame(t) {
+
+            renderer.context.clearRect(0,0,canvas.width,canvas.height);
+
+            t = t/300; // speed
+
+            const alpha = t - Math.floor(t); // fractional part in [0,1)
+            const i = Math.floor(t) % knots.length;
+
+            const a1 = knots[i];
+            const a2 = knots[(i + 1) % knots.length];
+            
+            const flow = lerpFlowParameters(a1, a2, alpha);
+            flow[0] = flow[1] = 0; // no translation
+            drawDeformedLineStrip(renderer, points, flow);
+        }
+
+        
+        var t0 = undefined;
+        var tlast = t0;
+
+        function update(t) {
+            if(t0 === undefined) {
+                t0 = t;
+                tlast = t;
+            }    
+            const dt = t - tlast;
+            if(dt > 40) { // 40ms = 25fps redraw rate
+                tlast = t;
+
+                drawFrame(t);
+
+            }
+            window.requestAnimationFrame(update);
+        }
+
+        update();
+    </script>
+</body>
