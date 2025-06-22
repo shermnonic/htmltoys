@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<!-- 386dx25.de 2025 -->
+<html lang=en>
+
+<head>
+    <meta charset=utf-8>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="author" content="386dx25, mnemonic@386dx25.de" />
+    <title>Circle Flow</title>
+    <style>
+        body {
+            text-align: center;
+            padding: 0;
+            margin: 0;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            z-index: -1;
+        }
+
+        footer {
+            width: 100%;
+            position: absolute;
+            bottom: 0px;
+            margin: auto;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            body {
+                color: white;
+                background: #121212;
+            }
+
+            a {
+                color: pink;
+            }
+
+            canvas {
+                filter: invert(100%);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Circle Flow</h1>
+    </header>
+    <canvas id="animation" width=500 height=500>
+        Animation of a circle deformed by a vectorfield.
+    </canvas>
+    <footer>
+        <p>by <a href="https://386dx25.de">386dx25.de</a>, 2025<br>
+            (<a href="https://github.com/shermnonic/htmltoys">source code</a>)</p>
+    </footer>
+
+    <script type="module">
+
+        // Vector field
+
+        function getFlowVector(point, flowParameters) {
+            const [x, y] = point;
+            const xy = x * y;
+            const a = flowParameters;
+            const x_dash = a[0] + a[1] * x + a[2] * x + a[6] * x * x + a[7] * xy;
+            const y_dash = a[4] + a[4] * x + a[5] * y + a[6] * xy + a[7] * y * y;
+            return [x_dash, y_dash];
+        }
+
+        function advectPoints(points, flowParameters) {
+            return points.map((point) => getFlowVector(point, flowParameters));
+        }        
+
+        function getRandomFlowParameters() {
+            return new Array(8).fill(0.0).map(() => Math.random() * 2 - 1);
+        }
+
+        function getIdentityFlowParameters() {
+            const a = new Array(8).fill(0.0);
+            a[1] = a[5] = 1.0;
+            return a;
+        }
+
+        // Linear interpolation
+
+        function lerpVector(a1, a2, alpha) {
+            return a1.map((value, index) => (1 - alpha) * value + alpha * a2[index]);
+        }
+
+        function interpolateLinear(knots, t) {
+            const alpha = t - Math.floor(t); // fractional part in [0,1)
+            const i = Math.floor(t) % knots.length;
+
+            const p1 = knots[i];
+            const p2 = knots[(i + 1) % knots.length];
+            
+            return lerpVector(p1, p2, alpha);
+        }
+
+        // Catmull-Rom spline interpolation
+
+        function splineTangentCatmullRom(p0, p1, p2) {
+            return p2.map((p2_value_at_index, index) => (p2_value_at_index - p0[index]) * 0.5);
+        }
+
+        function splineInUnitInterval(p0, p1, m0, m1, t) {
+            const tt = t*t;
+            const ttt = tt*t;
+
+            const c0 = 2*ttt - 3*tt + 1;
+            const c1 = ttt - 2*tt + t;
+            const c2 = -2*ttt + 3*tt;
+            const c3 = ttt - tt;
+            
+            return Array(p0.length).fill(0.0).map((_, i) => 
+                c0*p0[i] + c1*m0[i] + c2*p1[i] + c3*m1[i])
+        }
+
+        function interpolateCurve(knots, t)
+        {
+            const alpha = t - Math.floor(t); // fractional part in [0,1)
+            const i = Math.floor(t) % knots.length;
+
+            const p0 = knots[(knots.length + i - 1) % knots.length];
+            const p1 = knots[i];
+            const p2 = knots[(i + 1) % knots.length];
+            const p3 = knots[(i + 2) % knots.length];
+
+            const m1 = splineTangentCatmullRom(p0, p1, p2);
+            const m2 = splineTangentCatmullRom(p1, p2, p3);
+
+            return splineInUnitInterval(p1, p2, m1, m2, alpha);
+        }
+
+        // Drawing functions
+
+        function CanvasPathRenderer(canvas) {
+            this.context = canvas.getContext("2d");
+            this.context.reset();
+            this.width = canvas.width;
+            this.height = canvas.height;
+            this.beginPath = function() { this.context.beginPath(); }
+            this.moveTo = function(x, y) { this.context.moveTo(x, y); }
+            this.lineTo = function(x, y) { this.context.lineTo(x, y); }
+            this.stroke = function() { this.context.stroke(); }
+            this.drawPoint = function(x,y) { this.context.fillRect(x,y,1,1); }
+        }
+
+        function drawPoints(renderer, points) {
+            points.forEach((point) => renderer.drawPoint(point[0], point[1]));
+        }
+
+        function drawLineStrip(renderer, points) {
+            const firstPoint = points[0];
+            renderer.beginPath();
+            renderer.moveTo(firstPoint[0], firstPoint[1]);
+            points.forEach((point) => renderer.lineTo(point[0], point[1]));
+            renderer.lineTo(firstPoint[0], firstPoint[1]);
+            renderer.stroke();
+        }        
+
+        function createPointsOnCircle(n = 90) {
+            return new Array(n).fill([0, 0]).map(
+                (value, index) => [
+                    Math.cos(2 * Math.PI * index / n),
+                    Math.sin(2 * Math.PI * index / n)
+                ]);
+        }
+
+        function createPointsOnGrid(m = 40, n = 40) {
+            const scale = 5.0;
+            return new Array(m*n).fill([0, 0]).map(
+                (value, index) => [
+                    scale * (-0.5 + (index % n) / n),
+                    scale * (-0.5 + (Math.floor(index / n)) / n)
+                ]);
+        }
+
+        function shiftScalePoints(points, center, scale) {
+            return points.map((p) => [scale * p[0] + center[0], scale * p[1] + center[1]])
+        }
+
+        // Main animation
+
+        const canvas = document.getElementById("animation");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const renderer = new CanvasPathRenderer(canvas);
+
+        const gridPoints = createPointsOnGrid();
+        const circlePoints = createPointsOnCircle();
+
+        const knots = new Array(100).fill(0).map((_, index) => getRandomFlowParameters());
+        knots[0] = knots[1] = knots[2] = getIdentityFlowParameters(); // start animation with circle
+
+        renderer.context.lineWidth = 1.5;
+
+        function drawFrame(t) {
+
+            // fade-out previous frame
+            renderer.context.fillStyle = 'rgba(255,255,255,0.5)';
+            renderer.context.fillRect(0,0,canvas.width,canvas.height);
+            renderer.context.fillStyle = 'rgba(64,64,64,1.0)'; // fillStyle determines point color
+
+            t = t/1500; // 1.5 seconds between two knots
+
+            const flowParameters = interpolateCurve(knots, t);
+
+            flowParameters[0] = flowParameters[4] = 0; // no translation
+
+            const center = [renderer.width / 2, 0.8*renderer.height / 2];
+            const scale = 100;
+            
+            drawPoints(renderer, shiftScalePoints(advectPoints(gridPoints, flowParameters), center, scale));
+            drawLineStrip(renderer, shiftScalePoints(advectPoints(circlePoints, flowParameters), center, scale));
+        }
+
+        // Update at 25fps
+
+        var t0 = undefined;
+        var tlast = t0;
+
+        function update(t) {
+            if(t0 === undefined) {
+                t0 = t;
+                tlast = t;
+            }    
+            const dt = t - tlast;
+            if(dt > 40) { // 40ms = 25fps redraw rate
+                tlast = t;
+
+                drawFrame(t);
+
+            }
+            window.requestAnimationFrame(update);
+        }
+
+        update();
+    </script>
+</body>
