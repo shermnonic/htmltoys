@@ -63,7 +63,7 @@
 
         // Vector field
 
-        function advect(point, flowParameters) {
+        function getFlowVector(point, flowParameters) {
             const [x, y] = point;
             const xy = x * y;
             const a = flowParameters;
@@ -72,11 +72,21 @@
             return [x_dash, y_dash];
         }
 
+        function advectPoints(points, flowParameters) {
+            return points.map((point) => getFlowVector(point, flowParameters));
+        }        
+
         function getRandomFlowParameters() {
             return new Array(8).fill(0.0).map(() => Math.random() * 2 - 1);
         }
 
-        // Interpolation
+        function getIdentityFlowParameters() {
+            const a = new Array(8).fill(0.0);
+            a[1] = a[5] = 1.0;
+            return a;
+        }
+
+        // Linear interpolation
 
         function lerpVector(a1, a2, alpha) {
             return a1.map((value, index) => (1 - alpha) * value + alpha * a2[index]);
@@ -92,7 +102,7 @@
             return lerpVector(p1, p2, alpha);
         }
 
-        // Catmull-Rom spline
+        // Catmull-Rom spline interpolation
 
         function splineTangentCatmullRom(p0, p1, p2) {
             return p2.map((p2_value_at_index, index) => (p2_value_at_index - p0[index]) * 0.5);
@@ -138,16 +148,19 @@
             this.moveTo = function(x, y) { this.context.moveTo(x, y); }
             this.lineTo = function(x, y) { this.context.lineTo(x, y); }
             this.stroke = function() { this.context.stroke(); }
+            this.drawPoint = function(x,y) { this.context.fillRect(x,y,1,1); }
         }
 
-        function drawLineStrip(renderer, points, center, scale) {
+        function drawPoints(renderer, points) {
+            points.forEach((point) => renderer.drawPoint(point[0], point[1]));
+        }
 
-            const P = points.map((p) => [scale * p[0] + center[0], scale * p[1] + center[1]]);
-
+        function drawLineStrip(renderer, points) {
+            const firstPoint = points[0];
             renderer.beginPath();
-            renderer.moveTo(P[0][0], P[0][1]);
-            P.forEach((point) => renderer.lineTo(point[0], point[1]));
-            renderer.lineTo(P[0][0], P[0][1]);
+            renderer.moveTo(firstPoint[0], firstPoint[1]);
+            points.forEach((point) => renderer.lineTo(point[0], point[1]));
+            renderer.lineTo(firstPoint[0], firstPoint[1]);
             renderer.stroke();
         }        
 
@@ -159,10 +172,17 @@
                 ]);
         }
 
-        function drawDeformedLineStrip(renderer, points, flowParameters) {
-            const center = [renderer.width / 2, 0.8*renderer.height / 2];
-            const scale = 100;            
-            drawLineStrip(renderer, points.map((point) => advect(point, flowParameters)), center, scale);
+        function createPointsOnGrid(m = 40, n = 40) {
+            const scale = 5.0;
+            return new Array(m*n).fill([0, 0]).map(
+                (value, index) => [
+                    scale * (-0.5 + (index % n) / n),
+                    scale * (-0.5 + (Math.floor(index / n)) / n)
+                ]);
+        }
+
+        function shiftScalePoints(points, center, scale) {
+            return points.map((p) => [scale * p[0] + center[0], scale * p[1] + center[1]])
         }
 
         // Main animation
@@ -172,18 +192,32 @@
         canvas.height = window.innerHeight;
         const renderer = new CanvasPathRenderer(canvas);
 
-        const points = createPointsOnCircle();
+        const gridPoints = createPointsOnGrid();
+        const circlePoints = createPointsOnCircle();
+
         const knots = new Array(100).fill(0).map((_, index) => getRandomFlowParameters());
+        knots[0] = knots[1] = knots[2] = getIdentityFlowParameters(); // start animation with circle
+
+        renderer.context.lineWidth = 1.5;
 
         function drawFrame(t) {
 
-            renderer.context.clearRect(0,0,canvas.width,canvas.height);
+            // fade-out previous frame
+            renderer.context.fillStyle = 'rgba(255,255,255,0.5)';
+            renderer.context.fillRect(0,0,canvas.width,canvas.height);
+            renderer.context.fillStyle = 'rgba(64,64,64,1.0)'; // fillStyle determines point color
 
-            t = t/1500; // speed
+            t = t/1500; // 1.5 seconds between two knots
 
-            const flow = interpolateCurve(knots, t);
-            flow[0] = flow[4] = 0; // no translation
-            drawDeformedLineStrip(renderer, points, flow);
+            const flowParameters = interpolateCurve(knots, t);
+
+            flowParameters[0] = flowParameters[4] = 0; // no translation
+
+            const center = [renderer.width / 2, 0.8*renderer.height / 2];
+            const scale = 100;
+            
+            drawPoints(renderer, shiftScalePoints(advectPoints(gridPoints, flowParameters), center, scale));
+            drawLineStrip(renderer, shiftScalePoints(advectPoints(circlePoints, flowParameters), center, scale));
         }
 
         // Update at 25fps
