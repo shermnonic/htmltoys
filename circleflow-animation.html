@@ -196,7 +196,7 @@
         const circlePoints = createPointsOnCircle();
 
         const knots = new Array(100).fill(0).map((_, index) => getRandomFlowParameters());
-        knots[0] = knots[1] = knots[2] = getIdentityFlowParameters(); // start animation with circle
+        knots[0] = knots[1] = knots[knots.length-1] = getIdentityFlowParameters(); // start animation with circle
 
         renderer.context.lineWidth = 1.5;
 
@@ -222,14 +222,12 @@
 
         // Update at 25fps
 
-        var t0 = undefined;
-        var tlast = t0;
+        var tlast = undefined;
 
         function update(t) {
-            if(t0 === undefined) {
-                t0 = t;
+            if(tlast === undefined) {
                 tlast = t;
-            }    
+            }
             const dt = t - tlast;
             if(dt > 40) { // 40ms = 25fps redraw rate
                 tlast = t;
@@ -240,6 +238,6 @@
             window.requestAnimationFrame(update);
         }
 
-        update();
+        window.requestAnimationFrame(update);
     </script>
 </body>
