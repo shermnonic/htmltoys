@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<!-- 386dx25.de 2025 -->
+<html lang=en>
+
+<head>
+    <meta charset=utf-8>
+    <meta name="viewport" content="width=device-width" />
+    <meta name="author" content="386dx25, mnemonic@386dx25.de" />
+    <title>vidfx</title>
+</head>
+
+<body>
+    <header>
+        <h1>vidfx</h1>
+    </header>
+    <video controls="true" autoplay style="display: none;"></video>
+    <canvas id="canvas1" style="width: 30%; max-width: 320px;"></canvas>
+    <canvas id="canvas2" style="width: 68%; max-width: 640px;"></canvas>
+    <script type="module">
+        const video = document.querySelector("video");
+
+        navigator.mediaDevices
+            .getUserMedia({video: true})
+            .then((stream) => {                 
+                video.srcObject = stream; 
+            })
+            .catch((error) => { 
+                console.error(`${err.name}: ${err.message}`);
+            });
+        
+        // video processing based on https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Manipulating_video_using_canvas
+        const canvas1 = document.getElementById("canvas1");
+        const context1 = canvas1.getContext("2d", { willReadFrequently: true });
+        const canvas2 = document.getElementById("canvas2");
+        const context2 = canvas2.getContext("2d");
+
+        function update(t) {
+            const width = video.videoWidth / 2;
+            const height = video.videoHeight / 2;
+
+            if(width > 0 && height > 0)
+            {
+                canvas1.width = width;
+                canvas1.height = height;
+                canvas2.width = width;
+                canvas2.height = height;
+
+                context1.drawImage(video, 0, 0, width, height);
+
+                const frame = context1.getImageData(0, 0, width, height);
+
+                if(true) {
+                    const chick = t/100;
+                    const d = frame.data;
+                    const w4 = 4*width;
+                    for(let n = 4*width; n < d.length; n += 4) {
+                        d[n+0] = ((d[n-4+0] + d[n+4+0] + d[n-w4+0] + d[n+w4+0] + (17*chick)) >> 2) % 255;
+                        d[n+1] = ((d[n-4+1] + d[n+4+1] + d[n-w4+1] + d[n+w4+1] + (13*chick)) >> 2) % 255;
+                        d[n+2] = ((d[n-4+2] + d[n+4+2] + d[n-w4+2] + d[n+w4+2] + (11*chick)) >> 2) % 255;
+                    }
+                } else {
+                    const data = frame.data;
+                    for (let i = 0; i < data.length; i += 4) {
+                        const red = data[i + 0];
+                        const green = data[i + 1];
+                        const blue = data[i + 2];
+                        data[i + 0] = 255-blue;
+                        data[i + 1] = 255-red;
+                        data[i + 2] = green;
+                    }
+                }
+                context2.putImageData(frame, 0, 0);
+            }
+
+            window.requestAnimationFrame(update);
+        };
+
+        update();
+
+    </script>
+</body>
