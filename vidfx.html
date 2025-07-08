@@ -7,16 +7,53 @@
     <meta name="viewport" content="width=device-width" />
     <meta name="author" content="386dx25, mnemonic@386dx25.de" />
     <title>vidfx</title>
+    <style>
+        body {
+            text-align: center;
+            overflow: hidden;
+        }
+
+        #canvas1 {
+            position: absolute;
+            bottom: 0px;
+        }
+
+        footer {
+            width: 100%;
+            position: absolute;
+            bottom: 0px;
+            margin: auto;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                color: white;
+                background: #121212;
+            }
+
+            a {
+                color: pink;
+            } 
+        }      
+    </style>    
 </head>
 
 <body>
     <header>
         <h1>vidfx</h1>
     </header>
+    <div id="controls"></div>
     <video controls="true" autoplay style="display: none;"></video>
-    <canvas id="canvas1" style="width: 30%; max-width: 320px;"></canvas>
-    <canvas id="canvas2" style="width: 68%; max-width: 640px;"></canvas>
+    <canvas id="canvas1" style="width: 30%; max-width: 320px; display: none;"></canvas>
+    <canvas id="canvas2" style="width: 100%; max-width: 640px;"></canvas>
+    <footer>
+        <p>by <a href="https://386dx25.de">386dx25.de</a>, 2025<br>
+            (<a href="https://github.com/shermnonic/htmltoys/">source code</a>)</p>
+    </footer>    
     <script type="module">
+        
+        // Launch camera video
+
         const video = document.querySelector("video");
 
         navigator.mediaDevices
@@ -34,48 +71,130 @@
         const canvas2 = document.getElementById("canvas2");
         const context2 = canvas2.getContext("2d");
 
-        function update(t) {
+        // Video effects
+
+        var effect = "chick";
+        var effectStartTime = 0;
+
+        function drawFrame(t) {
+            // Use half video resolution for efficiency and more pixelated look
             const width = video.videoWidth / 2;
             const height = video.videoHeight / 2;
 
             if(width > 0 && height > 0)
             {
-                canvas1.width = width;
-                canvas1.height = height;
-                canvas2.width = width;
-                canvas2.height = height;
+                if(canvas1.width != width) {
+                    canvas1.width = canvas2.width = width;
+                    canvas1.height = canvas2.height = height;
+                }
 
                 context1.drawImage(video, 0, 0, width, height);
 
-                const frame = context1.getImageData(0, 0, width, height);
+                if(effect.startsWith("chick")) {
+                    const frame = context1.getImageData(0, 0, width, height);
+                    const rgbaBuffer = frame.data;
+                    const stride = 4;
+                    const rowStride = stride*width;
 
-                if(true) {
-                    const chick = t/100;
+                    const magicNumber = t/100;
+                    const colorScale = [17, 13, 11];
+                    const kernelCross = [-stride, +stride, -rowStride,  +rowStride];
+                    const kernelCorners = [-rowStride-stride, -rowStride+stride, +rowStride-stride, +rowStride+stride];
+                    const kernelOffset = (effect === "chick") ? kernelCross : kernelCross.concat(kernelCorners);
+                        
+                    const rightShifts = Math.log2(kernelOffset.length);
+                    for(let n = rowStride; n < rgbaBuffer.length-rowStride; n += stride) {
+                        for(let ch=0; ch < 3; ch++) {
+                            rgbaBuffer[n+ch] = ((kernelOffset.map((offset) => rgbaBuffer[n+offset+ch]).reduce((sum, value) => sum + value)
+                            + colorScale[ch]*magicNumber) >> rightShifts) % 255;
+                        }
+                        // @todo: Benchmark map/reduce against direct implementation.
+                        // d[n+0] = ((d[n-4+0] + d[n+4+0] + d[n-w4+0] + d[n+w4+0] + (17*chick)) >> 2) % 255;
+                        // d[n+1] = ((d[n-4+1] + d[n+4+1] + d[n-w4+1] + d[n+w4+1] + (13*chick)) >> 2) % 255;
+                        // d[n+2] = ((d[n-4+2] + d[n+4+2] + d[n-w4+2] + d[n+w4+2] + (11*chick)) >> 2) % 255;
+                    }
+                    context2.putImageData(frame, 0, 0);
+
+                } else if(effect === "slitscan") {
+                    const slitHeight = 1;
+                    const currentRow = ((t - effectStartTime)/100) % (1.5*height); // @note: Increment current row  beyond bottom to keep
+                                                               //        completed slit scan frame for some time.
+
+                    const frame = context1.getImageData(0, currentRow, width, slitHeight);
                     const d = frame.data;
-                    const w4 = 4*width;
-                    for(let n = 4*width; n < d.length; n += 4) {
-                        d[n+0] = ((d[n-4+0] + d[n+4+0] + d[n-w4+0] + d[n+w4+0] + (17*chick)) >> 2) % 255;
-                        d[n+1] = ((d[n-4+1] + d[n+4+1] + d[n-w4+1] + d[n+w4+1] + (13*chick)) >> 2) % 255;
-                        d[n+2] = ((d[n-4+2] + d[n+4+2] + d[n-w4+2] + d[n+w4+2] + (11*chick)) >> 2) % 255;
+                    context2.putImageData(frame, 0, currentRow);
+
+                } else if(effect === "color") {
+                    const frame = context1.getImageData(0, 0, width, height);
+                    const d = frame.data;
+                    for (let i = 0; i < d.length; i += 4) {
+                        const red = d[i + 0];
+                        const green = d[i + 1];
+                        const blue = d[i + 2];
+                        d[i + 0] = 255-blue;
+                        d[i + 1] = 255-red;
+                        d[i + 2] = green;
                     }
-                } else {
-                    const data = frame.data;
-                    for (let i = 0; i < data.length; i += 4) {
-                        const red = data[i + 0];
-                        const green = data[i + 1];
-                        const blue = data[i + 2];
-                        data[i + 0] = 255-blue;
-                        data[i + 1] = 255-red;
-                        data[i + 2] = green;
-                    }
+                    context2.putImageData(frame, 0, 0);
                 }
-                context2.putImageData(frame, 0, 0);
+            }
+        };     
+
+        // Update at 25fps
+
+        var tlast = undefined;
+
+        function update(t) {
+            if(tlast === undefined) {
+                tlast = t;
+            }
+            const dt = t - tlast;
+            if(dt > 40) { // 40ms = 25fps redraw rate
+                tlast = t;
+
+                drawFrame(t);
+
+            }
+            window.requestAnimationFrame(update);
+        }
+
+        // User interface
+
+        const controls = document.getElementById('controls');
+        if(controls) {
+            function addButton(text, fun) {
+                const button = document.createElement('button');
+                button.innerHTML = text;
+                controls.appendChild(button);
+                button.onclick = fun;
             }
 
-            window.requestAnimationFrame(update);
-        };
+            function addCheckbox(text, fun) {
+                const checkbox = document.createElement('input');
+                checkbox.type = "checkbox";
+                checkbox.id = text;
 
-        update();
+                const label = document.createElement('label')
+                label.htmlFor = text;
+                label.appendChild(document.createTextNode(text));
 
+                controls.appendChild(checkbox);
+                controls.appendChild(label);
+
+                checkbox.onchange = () => { fun(checkbox.checked); };
+            }
+            
+            addButton("chick", () => { effect = "chick"; });
+            addButton("chick2", () => { effect = "chick2"; });
+            addButton("slitscan", () => { effect = "slitscan"; effectStartTime = tlast; });
+            addButton("color", () => { effect = "color"; });
+            addCheckbox("show input", (checked) => { 
+                document.getElementById('canvas1').style.display = checked ? "block" : "none";
+            });
+        }
+        
+        // Launch
+
+        window.requestAnimationFrame(update);
     </script>
 </body>
