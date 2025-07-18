@@ -49,7 +49,11 @@ const pattern = document.getElementById("pattern");
 const wallpaper = document.getElementById("wallpaper");
 
 function updateTapestry() {
-  const lines = pattern.value.split("\n").filter(Boolean);
+  var lines = pattern.value.split("\n").filter(Boolean);
+  
+  const maxLineLength = lines.map((line) => line.length).reduce((accu, value) => Math.max(accu, value), 0);
+  lines = lines.map((line) => line + " ".repeat(maxLineLength - line.length));
+  
 
   if(lines.length <= 0)
     return;
@@ -60,8 +64,6 @@ function updateTapestry() {
   const rows = 25;
 
   const N = Math.floor(columns / lines[0].length);
-
-  //@todo: Calculate repeat depending on pattern size to fill some target size, say 80x25.
 
   let text = "\n";
   for(let row=0; row < rows; ++row) {
