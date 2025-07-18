@@ -50,15 +50,12 @@ const wallpaper = document.getElementById("wallpaper");
 
 function updateTapestry() {
   var lines = pattern.value.split("\n").filter(Boolean);
-  
-  const maxLineLength = lines.map((line) => line.length).reduce((accu, value) => Math.max(accu, value), 0);
-  lines = lines.map((line) => line + " ".repeat(maxLineLength - line.length));
-  
 
   if(lines.length <= 0)
     return;
 
-  //@todo: Make all lines equally long by padding white spaces at the end.
+  const maxLineLength = lines.map((line) => line.length).reduce((accu, value) => Math.max(accu, value), 0);
+  lines = lines.map((line) => line + " ".repeat(maxLineLength - line.length));
 
   const columns = 80;
   const rows = 25;
