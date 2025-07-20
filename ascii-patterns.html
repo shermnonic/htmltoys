@@ -27,11 +27,25 @@ code {
   right: 1em; 
   bottom: 0;
 }
+#presets {
+  position: absolute; 
+  right: 1em; 
+  top: 1em;
+}
+.presets {
+  display: grid;
+  grid-template-columns: auto;
+  grid-row-gap: 1em;
+}
+#presets span {
+  background-color: lightgray;
+}
 </style>
 </head>
 <body>
 <textarea id="pattern" name="pattern" rows="5" cols="8">
 </textarea>
+<div id="presets" class="presets" style="cursor: pointer"></div>
 <p id="controls">
   <a href="#" id="randomize" style="background-color: lightgreen">randomize</a>
   <a href="#" id="permalink" target="_blank" style="background-color: yellow">permalink</a>
@@ -92,6 +106,46 @@ function randomPattern() {
   return pattern;
 }
 
+
+const PresetPatterns = [
+`
+ /\\ \\  /
+/  \\ \\/ 
+\\  / /\\ 
+ \\/ /  \\
+`,`
+ /\\  \\/  
+//\\\\     
+\\\\//     
+ \\/  /\\  
+    //\\\\ 
+    \\\\// 
+`,`
++--+      
+|  | +--+ 
++--+ |  | 
+     +--+ 
+`,`
+ ___
+/. .\\  
+\\_o_/
+`,`
+o
+ O
+`
+];
+
+function createPresetButtons() {
+  const presets = document.getElementById("presets");
+  PresetPatterns.forEach((pattern, index) => {
+    var element = document.createElement('span');
+    element.innerHTML = "[ " + index + " ]";
+    element.onclick = () => setPattern(pattern);
+    presets.appendChild(element);
+  });
+}
+
+createPresetButtons();
 
 function updateDownloadLink(text, filename="tapestry.txt") {
   var element = document.getElementById("download");
