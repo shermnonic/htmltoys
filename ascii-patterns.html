@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="author" content="mnemonic@386dx25.de">
@@ -30,9 +30,10 @@ code {
 </style>
 </head>
 <body>
-<textarea id="pattern" name="pattern" rows="4" cols="8">
+<textarea id="pattern" name="pattern" rows="5" cols="8">
 </textarea>
 <p id="controls">
+  <a href="#" id="randomize" style="background-color: lightgreen">randomize</a>
   <a href="#" id="permalink" target="_blank" style="background-color: yellow">permalink</a>
   <a href="#" id="download" style="background-color: cyan">download</a>
 </p>
@@ -63,8 +64,37 @@ function writeTapestry(pattern, columns=80, rows=25) {
   return text;
 }
 
+
+function randomInt(n) {
+  return Math.floor(Math.random()*n);
+}
+
+function randomPattern() {
+  const charsets = ["/\\", "{}", "oO", "<>", "[]", ".:"];
+
+  var chars = charsets[randomInt(charsets.length)];
+  if(Math.random() > 0.5) chars += charsets[randomInt(charsets.length)];
+  if(Math.random() > 0.25) chars += charsets[randomInt(charsets.length)];
+  if(Math.random() > 0.125) chars += charsets[randomInt(charsets.length)];
+
+  const rows = 2 + randomInt(3);
+  const cols = 2 + randomInt(3);
+
+  chars += " ".repeat(2 + randomInt((rows+cols+chars.length)/2));
+  
+  var pattern = "";
+  for(let row=0; row < rows; ++row) {
+    for(let col=0; col < cols; ++col) {
+      pattern += chars[randomInt(chars.length)]
+    }
+    pattern += "\n";
+  }
+  return pattern;
+}
+
+
 function updateDownloadLink(text, filename="tapestry.txt") {
-  var element = document.getElementById("download"); //document.createElement('a');
+  var element = document.getElementById("download");
   element.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
   element.download = filename;
 }
@@ -77,24 +107,28 @@ function decodePattern(queryString) {
 function updatePermaLink(pattern) {
   var permalink = document.getElementById("permalink");
   const queryString = '?pattern=' + encodeURI(pattern);
-  console.log(queryString);
   permalink.href = '//' + location.host + location.pathname + queryString;
 }
 
-const pattern = document.getElementById("pattern");
+const patternElement = document.getElementById("pattern");
+
+function setPattern(pattern) {
+  if(pattern) {
+    patternElement.innerHTML = pattern;
+    onPatternChange();
+  }
+}
 
 function onPatternChange() {
   const wallpaper = document.getElementById("wallpaper");
-  wallpaper.innerHTML = writeTapestry(pattern.value, 180, 60);
+  wallpaper.innerHTML = writeTapestry(patternElement.value, 180, 60);
   updateDownloadLink(pattern.value + "\n" + writeTapestry(pattern.value));
   updatePermaLink(pattern.value);
 }
 
-const initialPattern = decodePattern(document.location.search.substring(1));
-if(initialPattern) {
-  pattern.innerHTML = initialPattern;
-  onPatternChange();
-}
+setPattern(decodePattern(document.location.search.substring(1)));
+
+document.getElementById("randomize").onclick = () => setPattern(randomPattern());
 
 pattern.addEventListener("input", (event) => onPatternChange());
 </script>
