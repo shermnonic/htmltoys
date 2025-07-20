@@ -26,14 +26,16 @@ code {
   position: absolute; 
   right: 1em; 
   bottom: 0;
-  background-color: cyan;
 }
 </style>
 </head>
 <body>
 <textarea id="pattern" name="pattern" rows="4" cols="8">
 </textarea>
-<p id="controls"><a href="#" id="download">download</a></p>
+<p id="controls">
+  <a href="#" id="permalink" target="_blank" style="background-color: yellow">permalink</a>
+  <a href="#" id="download" style="background-color: cyan">download</a>
+</p>
 <div>
 <code id="wallpaper">
 </code>
@@ -63,16 +65,38 @@ function writeTapestry(pattern, columns=80, rows=25) {
 
 function updateDownloadLink(text, filename="tapestry.txt") {
   var element = document.getElementById("download"); //document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-  element.setAttribute('download', filename);
+  element.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+  element.download = filename;
 }
 
-pattern.addEventListener("input", (event) => {  
-  const pattern = document.getElementById("pattern");
+function decodePattern(queryString) {
+  let params = new URLSearchParams(queryString);
+  return params.get("pattern") ? decodeURI(params.get("pattern")) : undefined;
+}
+
+function updatePermaLink(pattern) {
+  var permalink = document.getElementById("permalink");
+  const queryString = '?pattern=' + encodeURI(pattern);
+  console.log(queryString);
+  permalink.href = '//' + location.host + location.pathname + queryString;
+}
+
+const pattern = document.getElementById("pattern");
+
+function onPatternChange() {
   const wallpaper = document.getElementById("wallpaper");
   wallpaper.innerHTML = writeTapestry(pattern.value, 180, 60);
   updateDownloadLink(pattern.value + "\n" + writeTapestry(pattern.value));
-});
+  updatePermaLink(pattern.value);
+}
+
+const initialPattern = decodePattern(document.location.search.substring(1));
+if(initialPattern) {
+  pattern.innerHTML = initialPattern;
+  onPatternChange();
+}
+
+pattern.addEventListener("input", (event) => onPatternChange());
 </script>
 </body>
 </html>
