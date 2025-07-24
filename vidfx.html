@@ -62,7 +62,7 @@
                 video.srcObject = stream; 
             })
             .catch((error) => { 
-                console.error(`${err.name}: ${err.message}`);
+                console.error(`${error.name}: ${error.message}`);
             });
         
         // video processing based on https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Manipulating_video_using_canvas
