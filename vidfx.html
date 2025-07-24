@@ -51,13 +51,18 @@
             (<a href="https://github.com/shermnonic/htmltoys/">source code</a>)</p>
     </footer>    
     <script type="module">
+
+        // Parse preference for front- or back-camera from query
+
+        const params = new URLSearchParams(document.location.search.substring(1));
+        const preferVideoFacingMode = params.get("facingMode") ?? "user"; // or "environment"
         
         // Launch camera video
 
         const video = document.querySelector("video");
 
         navigator.mediaDevices
-            .getUserMedia({video: true})
+            .getUserMedia({video: { facingMode: preferVideoFacingMode }})
             .then((stream) => {                 
                 video.srcObject = stream; 
             })
