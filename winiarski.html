@@ -1,10 +1,13 @@
-<html lang="en"><!-- 386dx25.de 2023 -->
+<!doctype html>
+<!-- 386dx25.de 2023 -->
+<html lang="en">
   <head>
     <title>Winiarski</title>
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <script>
     window.onload = main;
-    
+
     function getPixelPositionInCanvas(canvas, e, ec) {
       let rect = canvas.getBoundingClientRect(e);
       return {
@@ -12,11 +15,13 @@
         y: (ec.clientY - rect.top)  * (canvas.height / rect.height)
       }
     }
-    
+
     var restartGame;
-    
+    var stepBackward;
+    var stepForward;
+
     function main() {
-    
+
         // --- Main process logic
 
         // Each block has stride x stride pixels.
@@ -33,19 +38,19 @@
             col: code % stride
           }
         }
-        
+
         // --- Drawing
 
         const canvas = document.getElementById("canvas");
         const width  = canvas.width;
         const height = canvas.height;
-        
+
         var ctx = canvas.getContext('2d');
         ctx.fillStyle = 'black';
 
         var sh = height/stride;
         var sw = width/stride;
-        
+
         function setStride(val) {
           stride = val;
           sh = height/stride;
@@ -63,12 +68,12 @@
             }
           }
         }
-        
+
         function drawCodeBlock(code) {
           let p = decode(code);
           ctx.fillRect(p.col*sw, p.row*sh, sw, sh);
         }
-        
+
         function drawGrid() {
           for(let col=0; col <= stride; ++col) {
             ctx.beginPath();
@@ -90,6 +95,7 @@
         
         var state = 'input'; // 'input' or 'final'
         var codes = [];
+        var codesFuture = []; // history for moving for-/backward through codes
 
         // In each round of the game a single pixel of a square block is set.
         // Finally, when all pixels are set, the image quilt showing blocks of 
@@ -98,33 +104,56 @@
           if(!codes.includes(code)) {
           
             codes.push(code);
+            codesFuture = [];
             
-            drawCodeBlock(code);
-            
-            updatePermalink(codes);
-            
-            if(codes.length > stride*stride-1) {
-              state = 'final';
-              ctx.clearRect(0,0,width,height);
-              drawCodesQuilt(codes);
-            }
+            updatePermalink();
+            redraw();
+          }
+        }
+
+        function redraw() {
+          ctx.clearRect(0,0,width,height);
+          drawGrid();
+          codes.forEach(code => drawCodeBlock(code));
+
+          if(codes.length > stride*stride-1) {
+            state = 'final';
+            ctx.clearRect(0,0,width,height);
+            drawCodesQuilt(codes);
+          }
+        }
+
+        function backward() {
+          if(codes.length > 0) {
+            state = 'input';
+            codesFuture.push(codes.pop());
+            redraw();
+          }
+        }
+
+        function forward() {
+          if(codesFuture.length > 0) {
+            codes.push(codesFuture.pop());
+            redraw();
           }
         }
         
         function startGame(newStride) {
           if(newStride) {
             setStride(newStride);
+            document.getElementById("boardSize").value = newStride;
           }
           state = 'input';
-          codes = [];
-          updatePermalink(codes);
-          ctx.clearRect(0,0,width,height);
-          drawGrid();
+          codes = codesFuture = [];
+          updatePermalink();
+          redraw();
         }
         
         restartGame = startGame;
+        stepBackward = backward;
+        stepForward = forward;
 
-        function updatePermalink(codes) {
+        function updatePermalink() {
           let permalink = document.getElementById('permalink');
           if(permalink) {
             let query_string = '?' + 'stride=' + stride + '&codes=' + codes.join(',');
@@ -132,26 +161,24 @@
             permalink.innerHTML = query_string;
           }
         }
-        
+
         function parseQueryString() {
           let params = new URLSearchParams(document.location.search.substring(1));
-          
-          let input_stride = params.get("stride");
-          let newStride;
-          if(input_stride) {
-            newStride = Math.min(Math.max(parseInt(input_stride), 2),16);
-          }
-          
+
+          let newStride = Math.min(Math.max(parseInt(params.get("stride")), 2),16);
+          newStride = Number.isNaN(newStride) ? undefined : newStride;
+
           startGame(newStride);
-          
+
           let input_codes = params.get("codes");
           if(input_codes) {
-            input_codes.split(',').map(token => input(Math.min(Math.max(parseInt(token), 0),stride*stride-1)));
+            input_codes.split(',').map(token => 
+              input(Math.min(Math.max(parseInt(token), 0),stride*stride-1)));
           }
         }
-        
+
         parseQueryString();
-        
+
         function mousefunc(e) {
           pos = getPixelPositionInCanvas(canvas, e, e);
           var x = Math.floor(pos.x);
@@ -164,7 +191,10 @@
           }
         }
 
-        canvas.addEventListener("mousedown", function(e) { mousefunc(e) }, false); 
+        canvas.addEventListener("mousedown", (event) => mousefunc(event), false); 
+        canvas.addEventListener("wheel", (event) => {
+          if(event.deltaY < 0) backward(); else forward();
+        });
     }
     </script>
     <style>
@@ -187,28 +217,48 @@
       min-height: 8em;
       font-family: monospace;
     }
+    @media (prefers-color-scheme: dark) {
+      body {
+        color: white;
+        background: #121212;
+      }
+      a { color: pink; } 
+      canvas { filter: invert(100%); }
+    }
     </style>
   </head>
   <body>
       <h1>Winiarski</h1>
+      <p>Homage to Ryszard Winiarski (1936 - 2006)</p>
       <canvas id="canvas" width="512" height="512"></canvas>
       <div id="codebox">
         <p><a href="#" id="permalink"></a></p>
       </div>
       <div>
         <button onclick="restartGame()">Restart</button>
-        <button onclick="restartGame(3)">3x3</button>
-        <button onclick="restartGame(4)">4x4</button>
-        <button onclick="restartGame(5)">5x5</button>
-        <button onclick="restartGame(6)">6x6</button>
-        <button onclick="restartGame(7)">7x7</button>
-        <button onclick="restartGame(8)">8x8</button>
-        <button onclick="restartGame(9)">9x9</button>
-        <button onclick="restartGame(10)">10x10</button>
+        <select onchange="restartGame(this.value)" id="boardSize">
+          <option value="3">3x3</option>
+          <option value="4">4x4</option>
+          <option value="5">5x5</option>
+          <option value="6">6x6</option>
+          <option value="7">7x7</option>
+          <option value="8">8x8</option>
+          <option value="9">9x9</option>
+          <option value="10">10x10</option>
+        </select>
+        <button onmousedown="stepBackward()">⏮ backward</button>
+        <button onmousedown="stepForward()">forward ⏭</button>
       </div>
       <p>
-        <a href="?stride=9&codes=9,19,29,39,49,59,69,79,8,18,28,38,48,58,68,78,7,17,27,37,47,57,67,77,6,16,26,36,46,56,66,76,5,15,25,35,45,55,65,75,4,14,24,34,44,54,64,74,3,13,23,33,43,53,63,73,2,12,22,32,42,52,62,72,1,11,21,31,41,51,61,71,0,10,20,30,40,50,60,70,80">Replay of "The Tenth Game 9x9" (1981)</a></br>
-        <a href="?stride=10&codes=99,98,88,89,97,87,77,78,79,96,86,76,66,67,68,69,95,85,75,65,55,56,57,58,59,94,84,74,64,54,44,45,46,47,48,49,93,83,73,63,53,43,33,34,35,36,37,38,39,92,82,72,62,52,42,32,22,23,24,25,26,27,28,29,91,81,71,61,51,41,31,21,11,12,13,14,15,16,17,18,19,90,80,70,60,50,40,30,20,10,0,1,2,3,4,5,6,7,8,9">Replay of "Game 10x10" (1978)</a>
+        <a href="?stride=9&codes=9,19,29,39,49,59,69,79,8,18,28,38,48,58,68,78
+,7,17,27,37,47,57,67,77,6,16,26,36,46,56,66,76,5,15,25,35,45,55,65,75,4,14,24
+,34,44,54,64,74,3,13,23,33,43,53,63,73,2,12,22,32,42,52,62,72,1,11,21,31,41,51
+,61,71,0,10,20,30,40,50,60,70,80">"The Tenth Game 9x9" (1981)</a></br>
+        <a href="?stride=10&codes=99,98,88,89,97,87,77,78,79,96,86,76,66,67,68,
+69,95,85,75,65,55,56,57,58,59,94,84,74,64,54,44,45,46,47,48,49,93,83,73,63,53,
+43,33,34,35,36,37,38,39,92,82,72,62,52,42,32,22,23,24,25,26,27,28,29,91,81,71,
+61,51,41,31,21,11,12,13,14,15,16,17,18,19,90,80,70,60,50,40,30,20,10,
+0,1,2,3,4,5,6,7,8,9">"Game 10x10" (1978)</a>
       </p>
   </body>
 </html>
