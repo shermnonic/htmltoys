@@ -108,7 +108,7 @@ transition: 0.5s;
   <div class="container">
     <canvas id="matrix" width="5" height="5"></canvas>
     <form id="radio">
-      <div><input type="button" class="button" name="kernel" value="random" autofocus /></div>
+      <div><input type="button" class="button" name="kernel" value="randomize" autofocus /></div>
       <div><input type="button" class="button" name="kernel" value="box" /></div>
       <div><input type="button" class="button" name="kernel" value="cross" /></div>
     </form>
@@ -118,6 +118,10 @@ transition: 0.5s;
       <input id="spin"   type="number" min="0" max="2048" step="1" value="0" style="text-align: center;">
     </div>
     <div style="text-align: right">
+      <span>
+        <input type="checkbox" id="foo" onclick="toggleDisplayMode()">
+        <label for="foo">boxed</label> 
+      </span>
       <a href="#" id="permalink">[permalink]</a>
     </div>
   <canvas id="canvas" width="128" height="128"></canvas>
@@ -135,12 +139,12 @@ transition: 0.5s;
 var canvas     = document.getElementById('canvas');
 var background = document.getElementById('background');
 var ctx    = canvas.getContext('2d');
-var width  = canvas.width;
-var height = canvas.height;
-var buffer = ctx.getImageData(0,0,width,height);
+var buffer; // will be set in  = ctx.getImageData(0,0,width,height);
 var fps = 25;
 var clear = true;
 var vertical_layout = true;
+var display_mode = 'fill';
+var fill_background = true;
 var matrix = document.getElementById('matrix');
 var spin   = document.getElementById('spin');
 var slider = document.getElementById('slider');
@@ -152,7 +156,6 @@ var con = 1111;
 
 // the current filter kernel
 var kernel = new Array(5*5);
-const hw = 2; // half-width of kernel
 var weight = 1.0; // the weight to normalize filter+constant
 var kernel_name = '';
 
@@ -207,7 +210,7 @@ function update_permalink() {
 
 function draw_matrix( m ) {
   var ctx = matrix.getContext('2d');
-  var buffer = ctx.getImageData(0,0,matrix.width,matrix.height);
+  var buffer = ctx.createImageData(matrix.width,matrix.height);
   var data = buffer.data;
   for( var i=0; i < m.length; ++i ) {
     val = m[i]*255 & 255
@@ -352,6 +355,9 @@ function update() {
 }
 
 function draw() {
+  var width = canvas.width;
+  var height = canvas.height;
+  if(!buffer) buffer = ctx.createImageData(width,height);
   var data = buffer.data;
   var ofs = 0;
   var rowofs = width*4;
@@ -364,6 +370,8 @@ function draw() {
       }
       else
       {
+        const hw = 2; // half-width of kernel
+
         if( x>hw && x<(width-hw) && y>hw && y<(height-hw) ) {
           // Convolve with kernel "in-place"
           var mi=0;
@@ -391,16 +399,42 @@ function draw() {
   ctx.putImageData( buffer, 0,0 );
 
   // update background
-  bg_ctx = background.getContext('2d');
-  if( bg_ctx ) {
-    bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, 0, 0, width-8, height-8 );
-    bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, width-8, 0, width-8, height-8 );
-    bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, 0, height-8, width-8, height-8 );
-    bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, width-8, height-8, width-8, height-8 );
+  if(fill_background) {
+    bg_ctx = background.getContext('2d');
+    if(bg_ctx) {
+      bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, 0, 0, width-8, height-8 );
+      bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, width-8, 0, width-8, height-8 );
+      bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, 0, height-8, width-8, height-8 );
+      bg_ctx.drawImage( canvas, 4, 4, width-8, height-8, width-8, height-8, width-8, height-8 );
+    }
   }
-  
+
   clear=false;
 }
+
+
+function setDisplayMode(mode) {
+  if(mode=='fill') {
+    background.style.display = 'block';
+    canvas.style.display = 'none';
+    canvas.width = 128;
+    canvas.height = 128;
+    fill_background = true;
+  } else {
+    background.style.display = 'none';
+    canvas.style.display = 'block';
+    canvas.width = 256;
+    canvas.height = 256;
+    fill_background = false;
+  }
+  buffer = undefined;
+}
+
+function toggleDisplayMode() {
+  setDisplayMode(fill_background ? 'block' : 'fill');
+}
+
+setDisplayMode(display_mode);
 
 init();
 </script>
