@@ -11,7 +11,7 @@
 <meta name="twitter:title" content="sinescans2" />
 <meta name="twitter:description" content="A classic function plotter with a twist." />
 <meta name="twitter:image" content="https://shermnonic.github.io/htmltoys/img/sinescans2.png" />
-<meta property="og:image" content="https://386dx25.de/krsopka_b/pages/FRONT.png" />
+<meta property="og:image" content="https://shermnonic.github.io/htmltoys/img/sinescans2.png" />
 <style>
 html, body {
   width:  100%;
@@ -43,12 +43,6 @@ h1 {
 .control {
   cursor: pointer;
 }
-#info {
-  position: absolute;
-  top: 60px;
-  text-align: center;
-  width: 100%;
-}
 footer {
   width: 100%;
   position: absolute;
@@ -59,19 +53,29 @@ footer {
 </head>
 <body>
 <h1>sinescans2</h1>
-<div id="info"></div>
+<div>
+  <select onchange="requestTransitionTo(this.value)" id="functionSelection">
+    <option value="0">Fancy 1</option>
+    <option value="1">Fancy 2</option>
+    <option value="2">Tent</option>
+    <option value="3">Gaussian</option>
+    <option value="4">Bessel</option>
+    <option value="5">Plasma</option>
+    <option value="6">Saddle</option>
+    <option value="7">Sigmoid</option>
+  </select>
+</div>
 <canvas id="canvas" width="128" height="128"></canvas>
 <footer>
   <p>
     by <a href="https://386dx25.de">386dx25.de</a>, 2020<br>
-    (<a href="https://github.com/shermnonic/htmltoys/blob/main/sinescans2.htm#L180">source code</a>)
+    (<a href="https://github.com/shermnonic/htmltoys/blob/main/sinescans2.htm">source code</a>)
   </p>
 </footer>
 
 <script>
 const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
-const info = document.getElementById("info");
 
 var canvasData;
 var imageBuffer;
@@ -104,25 +108,6 @@ var funcs = [
   { name: "saddle",   eval: (x,y,t,a) => { return x*y; } },
   { name: "sigmoid",  eval: (x,y,t,a) => { return 4*(1/(1+Math.exp(-4*x)) - 0.5); } },
 ];
-
-
-function updateInfo() {
-  if(info) {
-    info.innerHTML = "";
-    for(var i=0; i < funcs.length; ++i) {
-      let span = document.createElement('p');
-      span.textContent = funcs[i].name;
-      span.classList.add("control");
-      if(i==currentFunc) {
-        span.classList.add("underline");
-      } else {
-        const idx = i;
-        span.addEventListener('click', (e) => { requestTransitionTo(idx); });
-      }
-      info.appendChild(span);
-    }
-  }
-}
 
 var transition = {
   inProgress: false,
@@ -252,8 +237,11 @@ function updateGlobals() {
   canvas.height = canvas.height;
   
   context.clearRect(0,0,canvas.width,canvas.height);
-  canvasData = context.getImageData(0, 0, canvas.width, canvas.height);
-  imageBuffer = canvasData.data;
+  if(!canvasData) {
+    canvasData = context.createImageData(canvas.width, canvas.height);
+    imageBuffer = canvasData.data;
+  }
+  imageBuffer.fill(0);
 }
 
 function updateAnimation( dt ) {
@@ -266,7 +254,11 @@ function updateAnimation( dt ) {
   
   if( !transition.update(time) ) {
     currentFunc = transition.toIndex;
-    updateInfo();
+
+    var el = document.getElementById("functionSelection");
+    if(el) {
+      el.value = currentFunc;
+    }
   }
 }
 
@@ -283,12 +275,12 @@ function update(timestamp) {
   if(t0 === undefined) {
     t0 = timestamp;
     tlast = timestamp;
-  }            
+  }
   const dt = timestamp - tlast;
   updateAll(dt);
   window.requestAnimationFrame(update);
   tlast = timestamp;
-}  
+}
 
 var control = {
   active: false,
@@ -330,9 +322,6 @@ function getRelativePositionInCanvas(canvas, e) {
   return pos;
 }
 
-updateInfo();
-window.requestAnimationFrame(update);
-
 canvas.addEventListener("mousedown", (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.down(pos.x,pos.y); });
 canvas.addEventListener("mouseup",   (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.up  (pos.x,pos.y); });
 canvas.addEventListener("mouseout",  (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.up  (pos.x,pos.y); });
@@ -344,6 +333,10 @@ canvas.addEventListener("touchstart",(e) => { const pos=getRelativePositionInCan
 canvas.addEventListener("touchend",  (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.up  (pos.x,pos.y); }, { passive: false });
 canvas.addEventListener("touchcancel",(e)=> { const pos=getRelativePositionInCanvas(canvas, e); control.up  (pos.x,pos.y); }, { passive: false });
 canvas.addEventListener("touchmove", (e) => { const pos=getRelativePositionInCanvas(canvas, e); control.move(pos.x,pos.y); }, { passive: false });
+
+window.addEventListener('resize', () => { canvasData = undefined; }, false);
+
+window.requestAnimationFrame(update);
 
 </script>
 </body>
