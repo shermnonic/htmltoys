@@ -10,14 +10,14 @@
 
     #define ISO 1.2   // isosurface value to visualize
     #define EULER 3   // number of Euler steps in integrating the velocity field
-    
+
     uniform float stepsize; // raycaster stepsize w.r.t. unit volume
     uniform vec2 knots; // (e.g. =vec2(5.0,3.0)) knot numbers of Chladni pattern
-    
+
     float alpha = 0.;  // rotation angle of superposition coefficients
-    
+
     const float pi = 3.14159;
-    
+
     void animate() 
     {
       // Uncomment for alternative animation
@@ -25,7 +25,7 @@
       //knots = 1.5*vec2(sin(1.3*s+.3)+0.5,cos(s)+1.0)+1.0*vec2(cos(s*.1+.7)+1.0);
       alpha = iTime;
     }
-    
+
     // Gradient of Chladni 2D superposed eigenfunctions (arbitrary scaled)
     vec2 dfun( vec2 uv, vec2 knots, vec2 c ) 
     {
@@ -42,7 +42,7 @@
                     -sin(alpha), cos(alpha) ) * vec2(1.0,-1.0);
       return vec3(dfun(p.xy,knots,c),0);
     }
-    
+
     // Integrate velocity field via Euler-steps (backwards)
     vec3 integrate( vec3 x0 ) 
     {
@@ -52,14 +52,14 @@
         x = x - h * vel( x );
       return (x-x0);
     }
-    
+
     // Scalar field, warped by a flow, i.e. integrated velocity field
     float field( vec3 p ) 
     {
       p += integrate(p); // deformation
       return dot(p,p); // sphere
     }
-    
+
     // Gradient of (deformed) scalar field via central differences
     vec3 grad( vec3 p ) 
     {
@@ -68,30 +68,30 @@
                    field(p-d[1]) - field(p+d[1]),
                    field(p-d[2]) - field(p+d[2]) );
     }
-    
+
     void mainImage( out vec4 fragColor, in vec2 fragCoord ) 
     {
       vec3 rb = vec3(1.);  // background color
       vec3 rd = vec3(.9);  // diffuse color
       vec3 rs = vec3(1.);  // specular color
-      
+
       // normalized pixel coordinate
       vec2 npc = 2.0*fragCoord/iResolution.xy - vec2(1.0,1.0);
       npc.y /= iResolution.x/iResolution.y;
-      
+
       // fade background radially, interlaced lines
       float l = length(npc);
       vec4 bg = vec4(vec3(1.-(1.-l)*rb*mod(fragCoord.y,3.0)), 1.0) * (1.0 - smoothstep(0.5,1.0,l));
-      
+
       // skip raycasting beyond a central disc
       if( l > .9 )
       {
         fragColor = bg;
         return;
       }
-       
+
       animate();
-      
+
       // raycaster
       vec3 p0 = vec3(npc,-1.0);
       vec3 eye = vec3(0.0,0.0,-2.0);
@@ -102,19 +102,19 @@
         float s = float(i)*stepsize;
         if( s >= 1.0 )
           break;
-          
+
         vec3 p = p0 + s*dir;
         float val = field(p);
-        
+
         // isosurface, shaded
         if( val < ISO )
         {
           vec3 l = normalize(vec3(0.5,-0.5,1.0));
           vec3 n = normalize(grad(p));
           vec3 h = normalize(0.5*(l+dir));
-          
+
           float diff = max(0.0,dot(n,l));
-          float spec = pow(dot(h,n),42.0);      
+          float spec = pow(dot(h,n),42.0);
           
           // artificial sky reflection
           vec3 v = -dir;
@@ -123,7 +123,7 @@
           float h1 = max(-r.y,0.0);
           vec3 c = cos(31.0*r);
           vec3 refl = 1.2*vec3(1,1,1)*h0*c.x + 1.7*vec3(.8,.9,1)*h1;
-         
+
           dst = .7*vec4(0.42*rd*diff + 1.0*rs*spec + 0.5*refl, 1.0);
           break;
         }
@@ -178,10 +178,12 @@ footer {
       <a href="https://cineshader.com/view/3dS3zV">cineshader</a>)
   </p>
 </footer>
-<script type="text/javascript">    
+<script type="text/javascript">
 
 // Chladflow UI
-var knots = [5.0, 3.0];
+var knots;
+
+setKnotVector([5.0, 3.0]);
 
 function setKnotVector(k) {
   knots = k;
@@ -196,10 +198,10 @@ function updateGL(gl, program) {
   gl.uniform2f( gl.getUniformLocation(program,'knots'), knots[0], knots[1] );
 }
 
-function touchAndClickHandler(e) {  
+function touchAndClickHandler(e) {
   e.preventDefault();
   if(e.buttons || e.touches) {
-    let et = e.touches ? e.touches[0] : e;    
+    let et = e.touches ? e.touches[0] : e;
     setKnotVector([ 14.0 * (et.clientX / window.innerWidth - 0.5),
                     14.0 * (et.clientY / window.innerHeight - 0.5) ]);
   }
@@ -231,7 +233,7 @@ function resize() {
 }
 
 function main() {
-  try {    
+  try {
     var gl = canvas.getContext("webgl");
     if (!gl) throw "";
   } catch(ex) {
@@ -267,7 +269,7 @@ function main() {
   );  
 
   var buf = createBuffer(gl, prog, 2, [-1,-1,  -1, 1,  1,-1,  1, 1 ]);
-  
+
   function drawGL(t) {
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.uniform1f(gl.getUniformLocation(prog,'iTime'), t);
@@ -284,7 +286,7 @@ function main() {
     }
     window.requestAnimationFrame(frame);
   }
-  
+
   resize();
   frame();
 }
@@ -306,7 +308,7 @@ function buildShaderProgram(gl, vsrc, fsrc) {
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
     console.error(`Link failed: ${gl.getProgramInfoLog(prog)}`);
     console.error(`vs info-log: ${gl.getShaderInfoLog(vs)}`);
-    console.error(`fs info-log: ${gl.getShaderInfoLog(fs)}`);  
+    console.error(`fs info-log: ${gl.getShaderInfoLog(fs)}`);
     throw "Could not link the shader program!";
   }
   gl.useProgram(prog);
