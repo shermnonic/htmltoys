@@ -73,6 +73,9 @@ canvas { /* https://belenalbeza.com/retro-crisp-pixel-art-in-html-5-games/ */
   z-index: -1;
   padding: 0;
 }
+#slider {
+  zoom: 1.25;
+}
 input[type=range] {
   width: 100%;
   max-width: 500px;
@@ -115,12 +118,12 @@ transition: 0.5s;
   </div>
     <div>
       <input id="slider" type="range"  min="0" max="2048" step="8" value="0">
-      <input id="spin"   type="number" min="0" max="2048" step="1" value="0" style="text-align: center;">
+      <input id="spin"   type="number" min="0" max="2048" step="1" value="0" style="text-align: center; font-size: 115%">
     </div>
-    <div style="text-align: right">
+    <div>
       <span>
-        <input type="checkbox" id="foo" onclick="toggleDisplayMode()">
-        <label for="foo">boxed</label> 
+        <input type="checkbox" id="boxToggle" onclick="toggleDisplayMode()">
+        <label for="boxToggle">boxed</label> 
       </span>
       <a href="#" id="permalink">[permalink]</a>
     </div>
@@ -244,7 +247,7 @@ function set_kernel( name ) {
   default:
   case 'random':
     for( var i=0; i < kernel.length; ++i )
-      kernel[i] = Math.random();
+      kernel[i] = Math.round(Math.random()) % 2;
     break;
   case 'box':
     kernel = [ .0, .0, .0, .0, .0,
