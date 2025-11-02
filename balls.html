@@ -43,7 +43,9 @@ footer {
   <p>
     <a href="?style=rainbow&mode=linear">hue</a>
     <a href="?style=bw&mode=clelia">bw</a>
-    <a href="?style=nmi&mode=nmi">nmi</a><br/>
+    <a href="?style=bw&mode=manhattan">city</a>
+    <a href="?style=nmi&mode=nmi">nmi</a>
+    <br/>
   </p>
   <button onclick="InfiniBalls.togglePause()">Pause</button>
   <button onclick="InfiniBalls.renderGIF()">Render gif</button>
@@ -58,7 +60,7 @@ var bgcolor = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'rgba(
 var InfiniBalls = new function() {
 
   var style = 'rainbow'; // bw, rainbow, nmi
-  var mode = 'linear'; // linear, clelia
+  var mode = 'linear'; // linear, clelia, manhattan
 
   var parse_query_string = function() {
     // parse url parameters
@@ -87,7 +89,7 @@ var InfiniBalls = new function() {
         this.context.fillStyle = 'black';
         this.context.fillRect(0,0,canvas.width,canvas.height);
         document.getElementsByTagName("body")[0].style.color = "white";
-      } else {      
+      } else {
         // clearRect() for transparent canvas, probably more efficient than fillRect
          this.context.clearRect(0,0,canvas.width,canvas.height);
 
@@ -99,7 +101,7 @@ var InfiniBalls = new function() {
     };
     
     this.slowlyFadeToWhite = function() {
-        this.context.fillStyle = 'rgba(255,255,255, 0.04)';
+        this.context.fillStyle = 'rgba(255,255,255, 0.01)';
         this.context.fillRect(0,0,this.canvas.width,this.canvas.height);
         this.context.stroke();
     };
@@ -127,6 +129,7 @@ var InfiniBalls = new function() {
     vel : [0.1, 0.1],
     hue : 0,
     bounds : [0,0, 100,100], // set in reset()
+    sequence : null,
     
     reset : function(width, height) {
       this.radius = Math.min(width,height) * 0.042;
@@ -139,22 +142,93 @@ var InfiniBalls = new function() {
 
     move : function(dt) { 
       if(mode=='clelia')
-        this.moveClelia(dt, 1.3); // p=1.3 gives a nice jumble ;-)
+        this.moveClelia(dt, 2.3, 0); // p=1.3 gives a nice jumble ;-)
       else if(mode=='nmi')
         this.moveNMI(dt);
+      else if(mode=='manhattan')
+        this.moveManhattan(dt);
       else // mode=='linear'
-        this.moveLinear(dt); // only moveLinear() supports targetAt() yet
+        this.moveLinear(dt);
       //this.moveCircleEuler(dt); // Euler step will diverge of course :-p
     },  
 
-    moveClelia : function(dt, p) {
+    moveManhattan : function(dt) {
+      const r = this.radius;
+      const boundLo = [ this.bounds[0], this.bounds[1] ];
+      const boundHi = [ this.bounds[2], this.bounds[3] ];
+
+      function randomInt(n) {
+        return Math.floor(Math.random() * (n + 0.5));
+      }
+
+      function randomSign() {
+        return Math.sign(Math.random() - 0.5);
+      }
+
+      function randomManhattanPosition() {
+        return [0,1].map((d) => randomInt(Math.floor((boundHi[d] - boundLo[d]) / r)) * r);
+      }
+
+      function randomManhattanVelocity() {
+        let v = [0, 0];
+        v[randomInt(1)] = 0.1 * randomSign();
+        return v;
+      }
+
+      function randomManhattanSteps() {
+        const minSteps = 2;
+        const maxSteps = 10;
+        return minSteps + randomInt(maxSteps - minSteps);
+      }
+
+      function distance(p, q) {
+        const sqd = (a, b) => (b - a)*(b - a);
+        return Math.sqrt(sqd(p[0], q[0]) + sqd(p[1], q[1]));
+      }
+
+      if(!this.sequence) {
+        this.pos = randomManhattanPosition();
+        this.vel = randomManhattanVelocity();
+        this.sequence = { numSteps: randomManhattanSteps(), startPos: this.pos.slice() };
+      }
+
       this.time += dt;
+
+      var wrapped = false;
+      const currentSteps = Math.floor(distance(this.pos, this.sequence.startPos) / r);
+      for( var d=0; d < 2; ++d ) {
+        this.pos[d] += dt*this.vel[d];
+
+        if (this.pos[d] < (boundLo[d] - 2*r)) {
+          this.pos[d] = boundHi[d] + 2*r;
+          wrapped = true;
+        }
+        else if (this.pos[d] > (boundHi[d] + 2*r)) {
+          this.pos[d] = boundLo[d] - 2*r;
+          wrapped = true;
+        }
+      }
+      if(wrapped) {
+        this.sequence.numSteps -= currentSteps;
+        this.sequence.startPos = this.pos.slice();
+      }
+
+      const shouldTurn = distance(this.pos, this.sequence.startPos) >= this.radius*this.sequence.numSteps;
+      if(shouldTurn) {
+        this.vel = [randomSign()*this.vel[1], randomSign()*this.vel[0]];
+        this.sequence = { numSteps: randomManhattanSteps(), startPos: this.pos.slice() };
+      }
+    },
+
+    moveClelia : function(dt, p, tofs) {
+      this.time += dt;
+      const t = this.time + tofs;
       let w = this.bounds[2];
       let h = this.bounds[3];
       let r = Math.min(w,h)*0.4;
       let rad_per_msec = 0.0005;
-      let theta = rad_per_msec*this.time;
-      let phi = rad_per_msec*this.time * p;
+      let theta = rad_per_msec * t;
+      let phi = rad_per_msec * t * p;
       this.pos = [.5*w + r*Math.cos(theta)*Math.cos(phi), 
                   .5*h + r*Math.cos(theta)*Math.sin(phi)];
     },
@@ -301,8 +375,11 @@ var InfiniBalls = new function() {
   var touchAndClickHandler = function(e) {
     var pos = getPositionInCanvas(screen.canvas, e, e.touches ? e.touches[0] : e);
     e.preventDefault();
-    if(e.buttons || e.touches)
-      ball.targetAt(pos.x, pos.y);
+    if(e.buttons || e.touches) {
+      if(mode == 'linear') {
+        ball.targetAt(pos.x, pos.y);
+      }
+    }
   };
 
   var pause = function() {
