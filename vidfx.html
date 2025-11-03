@@ -34,8 +34,8 @@
             a {
                 color: pink;
             } 
-        }      
-    </style>    
+        }
+    </style>
 </head>
 
 <body>
@@ -56,14 +56,14 @@
 
         const params = new URLSearchParams(document.location.search.substring(1));
         const preferVideoFacingMode = params.get("facingMode") ?? "user"; // or "environment"
-        
+
         // Launch camera video
 
         const video = document.querySelector("video");
 
         navigator.mediaDevices
             .getUserMedia({video: { facingMode: preferVideoFacingMode }})
-            .then((stream) => {                 
+            .then((stream) => {
                 video.srcObject = stream; 
             })
             .catch((error) => { 
@@ -122,8 +122,8 @@
 
                 } else if(effect === "slitscan") {
                     const slitHeight = 1;
-                    const currentRow = ((t - effectStartTime)/100) % (1.5*height); // @note: Increment current row  beyond bottom to keep
-                                                               //        completed slit scan frame for some time.
+                    // @note: Increment current row  beyond bottom to keep completed slit scan frame for some time.
+                    const currentRow = ((t - effectStartTime)/100) % (1.5*height);
 
                     const frame = context1.getImageData(0, currentRow, width, slitHeight);
                     const d = frame.data;
