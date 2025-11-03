@@ -1,0 +1,150 @@
+<!doctype html><!-- www.386dx25.de 2022 -->
+<html lang="en">
+<head><meta charset="utf-8"/>
+<title>Archimedes Hat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+<meta name="author" content="386dx25, mnemonic@386dx25.de"/>
+<script>
+// Draw hat graph front-to-back, removing hidden lines via single line buffer.
+
+function LineBuffer(width, initValue) {
+  this.data = new Array(width);
+  this.data.fill(initValue);
+  
+  this.test = function(x, value) {
+    if(value < this.data[x]) {
+      this.data[x] = value
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+
+function PixelRenderer(canvas) {
+  this.context = canvas.getContext('2d');
+  this.context.reset();
+  this.canvasData = this.context.createImageData(canvas.width, canvas.height);
+  this.imageBuffer = this.canvasData.data;  
+  this.rowHeightBuffer = new LineBuffer(canvas.width, 200);
+
+  this.psetLinear = (index, rgba) => this.imageBuffer.set(rgba, index);
+  this.pixelIndex = (x,y) => (x + y*canvas.width) << 2;
+
+  this.beginPath = () => {};
+  this.endPath = () => {};
+
+  this.addPoint = function(x1,y1) {
+    if(this.rowHeightBuffer.test(x1,y1)) {
+      let pi = this.pixelIndex(x1,y1);
+      const color = [0,0,0,255];
+      this.psetLinear(pi, color);
+    }
+  }
+
+  this.endFrame = () => this.context.putImageData(this.canvasData, 0,0);
+}
+
+function PathRenderer(canvas) {
+  this.context = canvas.getContext('2d');
+  this.context.reset();
+  this.context.translate(0.5, 0.5);
+  this.context.lineWidth = 0.5;
+
+  this.rowHeightBuffer = new LineBuffer(canvas.width, 200);
+
+  this.firstPointInCurrentPathSegment = true;
+
+  this.beginPath = function() {
+    this.context.beginPath();
+    this.firstPointInCurrentPathSegment = true;
+  }
+
+  this.endPath = function() {
+    if(!this.firstPointInCurrentPathSegment)
+      this.context.stroke();
+  }
+
+  this.addPoint = function(x1,y1) {
+    if(!this.rowHeightBuffer.test(x1,y1)) {
+      this.endPath();
+      this.beginPath();
+    } else {
+      if(this.firstPointInCurrentPathSegment) {
+        this.context.moveTo(x1,y1);
+        this.firstPointInCurrentPathSegment = false;
+      } else {
+        this.context.lineTo(x1,y1);
+      }
+    }
+  }
+
+  this.endFrame = () => {};
+};
+
+function draw(rendererName) {
+  const canvas = document.getElementById("canvas");
+
+  rendererName = rendererName || 'pixel';
+  const renderer = rendererName=='path' ? new PathRenderer(canvas) 
+                                        : new PixelRenderer(canvas);
+
+  let t0 = performance.now();
+
+  // https://goto10.substack.com/p/archimedes-spiral
+  const xp = 144;
+  const xr = 4.71238905;
+  const xf = xr/xp;
+
+  for(let zi=64; zi>=-64; --zi) {
+    let zt = zi*2.25;
+    let zs = zt*zt;
+    let xl = Math.floor(Math.sqrt(20736 - zs) + 0.5);
+
+    renderer.beginPath();
+
+    for(let xi=-xl; xi<=xl; ++xi) {
+      let xt = Math.sqrt(xi*xi + zs)*xf;
+
+      let yy = ( Math.sin(xt) + Math.sin(xt*3) * 0.4 )*56;
+      let x1 = xi + zi + 160;
+      let y1 = Math.floor(90 - yy + zi);
+
+      renderer.addPoint(x1,y1);
+    }
+
+    renderer.endPath();
+  }
+
+  renderer.endFrame();
+
+  let t1 = performance.now();
+  console.log(`Draw time for ${rendererName} renderer: ${Math.floor(t1-t0)} ms`);
+}
+</script>
+<style>
+body {
+  text-align: center;
+}
+canvas {
+  max-width: 640px;
+  width: 100%;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+</style>
+</head>
+<body onload="draw();">
+<h1>Archimedes Hat</h1>
+<p>
+  <button onclick="draw('pixel')">PixelRenderer</button>
+  <button onclick="draw('path')">PathRenderer</button>
+</p>
+<canvas id="canvas" width="320px" height="200px"></canvas>
+<p>Adapted from <a href="https://goto10.substack.com/p/archimedes-spiral">
+Archimedes Spiral in Basic by Paul Lefebvre (2022)</a>.<br>
+See also <a href="https://udel.edu/~mm/hat/index.html">
+Mathematical Hat in Early Computing Demos by Mike Markowski (2024)</a>.
+</p>
+</body>
+</html>
