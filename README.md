@@ -10,6 +10,30 @@ Each toy comes in a single, self-contained .html file. The source never exceeds 
 
 ## The toys
 
+**[Apfelberge](https://shermnonic.github.io/htmltoys/apfelberge.html)**
+
+Draw a Julia set like its 1987!
+
+![Screenshot of Apfelberge](img/screenshots/apfelberge.jpg)
+
+**[vidfx](https://shermnonic.github.io/htmltoys/vidfx.html)**
+
+Some camera video effects. Launch [vidfx.html?facingMode=environment](https://386dx25.de/vidfx.html?facingMode=environment) for other camera.
+
+![Screenshot of vidfx](img/screenshots/vidfx.png)
+
+**[ASCII Patterns](https://shermnonic.github.io/htmltoys/ascii-patterns.html)**
+
+Stupid ASCII pattern generator.
+
+![Screenshot of ASCII Patterns](img/screenshots/ascii-patterns.png)
+
+**[Circle Flow Animation](https://shermnonic.github.io/htmltoys/circleflow-animation.html)**
+
+Animation of Circle Flow ;-)
+
+![Screenshot of xorxor](img/screenshots/circleflow-animation.jpg)
+
 **[Circle Flow](https://shermnonic.github.io/htmltoys/circleflow.html)**
 
 Two flow fields interpolated at 10 steps and applied to a circle.
@@ -22,7 +46,11 @@ Generative Christmas cards 2023.
 
 ![Screenshot of xorxor](img/screenshots/xorxor.png)
 
+**[Archimedes Hat](https://shermnonic.github.io/htmltoys/hat.html)**
 
+Is this the hat of Archimedes?
+
+![Screenshot of Apfelberge](img/screenshots/hat.png)
 
 **[Winiarski](https://shermnonic.github.io/htmltoys/winiarski.html)**
 
@@ -41,20 +69,20 @@ The source is basically a dweet player. See [my original dweet on dwitter](https
 
 Interactive animation of an infinite number of balls at constant cost.
 
-Comes in three flavours:
+Comes with three presets:
 
-- [Infiniballs hue](https://shermnonic.github.io/htmltoys/balls.html?style=rainbow&mode=linear) in rainbow color (interactive)
-- [Infiniballs bw](https://shermnonic.github.io/htmltoys/balls.html?style=bw&mode=clelia) draws a Clelia curve (non-interactive)
-- [Infiniballs nmi](https://shermnonic.github.io/htmltoys/balls.html?style=nmi&mode=nmi) is a homage to [Jump from Public Enemy (1992)](http://www.pouet.net/prod.php?which=4210) (see [video of original effect](https://youtu.be/DNpw4xrR_Bc?t=28)) (non-interactive)
+- ["hue"](https://shermnonic.github.io/htmltoys/balls.html?style=rainbow&mode=linear) in rainbow color (*interactive, follows mouse click / touch*)
+- ["bw"](https://shermnonic.github.io/htmltoys/balls.html?style=bw&mode=clelia) draws a Clelia curve
+- ["city"](https://shermnonic.github.io/htmltoys/balls.html?style=bw&mode=manhattan) only allows right angle turns
+- ["nmi"](https://shermnonic.github.io/htmltoys/balls.html?style=nmi&mode=nmi) is a homage to [Jump from Public Enemy (1992)](http://www.pouet.net/prod.php?which=4210) (see [video of original effect](https://youtu.be/DNpw4xrR_Bc?t=28))
 
 ![Screenshot of Infiniballs](img/screenshots/balls.jpg)
 
 **[sinescans2](https://shermnonic.github.io/htmltoys/sinescans2.htm)**
 
-Interactive animation.
+Interactive animation. See also the [first version](https://shermnonic.github.io/htmltoys/sinescans.htm).
 
 > I love 1980's style 2D function plot algorithms; this one draws column wise using a 1-value z-buffer for hidden line removal ;-)
-
 
 ![Screenshot of Sinescans2](img/screenshots/sinescans.jpg)
 
