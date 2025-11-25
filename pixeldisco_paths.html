@@ -97,7 +97,9 @@ function getDiscPath() {
   return path;
 }
 
-const path = getSpiralPath();
+const input = new URLSearchParams(document.location.search.substring(1));
+const pattern = input.get("pattern") || 'spiral';
+const path = (pattern === 'disc') ? getDiscPath() : (pattern === 'diamond') ? getDiamondPath() : getSpiralPath();
 
 function draw() {
   const imageData = ctx.getImageData(0, 0, width, height);
