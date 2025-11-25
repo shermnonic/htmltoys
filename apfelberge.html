@@ -95,7 +95,7 @@ const SCREEN_WIDTH = 320 * Options.scale;
 const SCREEN_HEIGHT = 240 * Options.scale;
 
 function setCanvasSize(id, width, height) {
-    let canvas = document.getElementById(id); // @todo: ensure canvas type
+    let canvas = document.querySelector(`canvas#${id}`);
     if(canvas) {
         canvas.width = width;
         canvas.height = height;
