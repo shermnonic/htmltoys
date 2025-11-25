@@ -57,10 +57,12 @@ body {
 
 const params = new URLSearchParams(document.location.search.substring(1));
 
-const resolutionScale = params.get("scale") ?? 1; // 1 = 320x240 screen, 2 = 640x480 screen
-const doDarkenTopColorDependingOnDepth = false;
-const doAnimation = true;
-const animationSpeed = 1.0 * (resolutionScale*resolutionScale);
+const Options = {
+    scale : params.get("scale") ?? 1, // 0.5 = 160x120, 1 = 320x240, 2 = 640x480
+    doDarkenTopColorDependingOnDepth : false,
+    animate : true,
+    speed : 4.0
+};
 
 const JuliaParameters = {
     rangeX : [-.15, .25],
@@ -86,11 +88,11 @@ const Colors = (function() {
 
 // -- Fix canvas size
 
-const PLANE_WIDTH = 180 * resolutionScale;
-const PLANE_HEIGHT = 128 * resolutionScale;
+const PLANE_WIDTH = 180 * Options.scale;
+const PLANE_HEIGHT = 128 * Options.scale;
 
-const SCREEN_WIDTH = 320 * resolutionScale;
-const SCREEN_HEIGHT = 240 * resolutionScale;
+const SCREEN_WIDTH = 320 * Options.scale;
+const SCREEN_HEIGHT = 240 * Options.scale;
 
 function setCanvasSize(id, width, height) {
     let canvas = document.getElementById(id); // @todo: ensure canvas type
@@ -198,7 +200,7 @@ function drawColumn(image, x, y0, height, rgb, alpha = 255) {
     }
 }
 
-function ApfelPainter(image, heightMap, maxHeight = 64*resolutionScale, colors = Colors) {
+function ApfelPainter(image, heightMap, maxHeight = 64*Options.scale, colors = Colors) {
     this.image = image;
     this.heightMap = heightMap;
 
@@ -251,7 +253,7 @@ function ApfelPainter(image, heightMap, maxHeight = 64*resolutionScale, colors =
         // draw _side_ line from (x+1,y) - (x+1,y+height-1)
         drawColumn(this.image, x+1, y, height-1, colors.side);
         // draw _top_ point(s) via lines
-        topColor = doDarkenTopColorDependingOnDepth 
+        topColor = Options.doDarkenTopColorDependingOnDepth 
             ? colors.top.map((value) => 0.7*value + 0.3*value*(height / maxHeight))
             : colors.top;
         drawColumn(this.image, x, y-height, 1, topColor);
@@ -298,7 +300,7 @@ if(screenContext) {
             showImage(screenContext, screen);
             saveImage(screenCanvas, `Apfelberge-${1000 + frame}.png`);
         }
-    } else if(doAnimation) {
+    } else if(Options.animate) {
         let start;
 
         function animateDraw(timestamp) {
@@ -307,7 +309,7 @@ if(screenContext) {
             }
             const elapsed = timestamp - start;
 
-            const notComplete = painter.drawToStep(Math.floor(elapsed * animationSpeed));
+            const notComplete = painter.drawToStep(Math.floor(elapsed * Options.speed * (Options.scale*Options.scale)));
 
             showImage(screenContext, screen);
 
