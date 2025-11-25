@@ -7,11 +7,11 @@
 </head>
 <style>
 :root {
-    /* Color values from scanned magazine page photo, annotated by original C16 Basic commands and "intent" */
-    --gfx-bg-color : rgb(87, 170, 176); /* COLOR 0, 7 ("blue") */
-    --gfx-side-color : rgb(0, 0, 0); /* COLOR 2, 1 ("black") */
-    --gfx-front-color : rgb(202, 124, 117); /* COLOR 3, 3 ("red") */
-    --gfx-top-color : rgb(255, 255, 135); /* COLOR 1, 8 ("yellow") */
+  /* Color values from scanned magazine page photo, annotated by original C16 Basic commands and "intent" */
+  --gfx-bg-color : rgb(87, 170, 176); /* COLOR 0, 7 ("blue") */
+  --gfx-side-color : rgb(0, 0, 0); /* COLOR 2, 1 ("black") */
+  --gfx-front-color : rgb(202, 124, 117); /* COLOR 3, 3 ("red") */
+  --gfx-top-color : rgb(255, 255, 135); /* COLOR 1, 8 ("yellow") */
 }
 body {
   text-align: center;
@@ -24,28 +24,29 @@ body {
 }
 @media screen and (min-width: 640px) {
   #screen {
-    image-rendering: crisp-edges;
-    image-rendering: pixelated;
-    width: 640px;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  width: 640px;
   }
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --gfx-bg-color : rgb(128, 255, 255);
-    --gfx-side-color : rgb(128, 128, 255);
-    --gfx-front-color : rgb(255, 128, 128);
-    --gfx-top-color : rgb(0, 0, 0);
+  --gfx-bg-color : rgb(128, 255, 255);
+  --gfx-side-color : rgb(128, 128, 255);
+  --gfx-front-color : rgb(255, 128, 128);
+  --gfx-top-color : rgb(0, 0, 0);
   }
   body {
-    color: white;
-    background: #121212;
+  color: white;
+  background: #121212;
   }
   a { color: pink; }
 }
 </style>
 <body>
 <h1>Apfelberge</h2>
-<p>Reproduction of a C16 Basic listing of the same name from 1987 (<a href="https://inc-x.net/mylisting/Listings/EDBF8DB5-9E43-4F50-A393-90ECF045FCE4.PNG">see scan on inc-x.net</a>).</p>
+<p>Reproduction of a C16 Basic listing of the same name from 1987 found 
+  (<a href="https://inc-x.net/mylisting/Listings/EDBF8DB5-9E43-4F50-A393-90ECF045FCE4.PNG">here</a>).</p>
 <canvas id="screen" width="320px" height="240px"></canvas>
 <canvas id="plane" width="180px" height="128px"></canvas>
 <p>by <a href="https://386dx25.de">386dx25.de</a>, 2025</p>
@@ -58,31 +59,32 @@ body {
 const params = new URLSearchParams(document.location.search.substring(1));
 
 const Options = {
-    scale : params.get("scale") ?? 1, // 0.5 = 160x120, 1 = 320x240, 2 = 640x480
-    doDarkenTopColorDependingOnDepth : false,
-    animate : true,
-    speed : 4.0
+  scale : params.get("scale") ?? 1, // 0.5 = 160x120, 1 = 320x240, 2 = 640x480
+  doDarkenTopColorDependingOnDepth : false,
+  animate : true,
+  speed : 4.0
 };
 
 const JuliaParameters = {
-    rangeX : [-.15, .25],
-    rangeY : [.47, .9],
-    c_x : 1.0,
-    c_y : 0.0
+  rangeX : [-.15, .25],
+  rangeY : [.47, .9],
+  c_x : 1.0,
+  c_y : 0.0
 };
 
 const Colors = (function() {
-    function parseColor(color) {
-        // Regular expression from https://stackoverflow.com/questions/11068240/what-is-the-most-efficient-way-to-parse-a-css-color-in-javascript
-        return color.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i).slice(1,4);
-    };
-    var style = window.getComputedStyle(document.body);
-    return {
-        background : parseColor(style.getPropertyValue('--gfx-bg-color')),
-        side : parseColor(style.getPropertyValue('--gfx-side-color')),
-        front : parseColor(style.getPropertyValue('--gfx-front-color')),
-        top : parseColor(style.getPropertyValue('--gfx-top-color'))
-    };
+  function parseColor(color) {
+    // Regular expression from 
+    // https://stackoverflow.com/questions/11068240/what-is-the-most-efficient-way-to-parse-a-css-color-in-javascript
+    return color.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i).slice(1,4);
+  };
+  var style = window.getComputedStyle(document.body);
+  return {
+    background : parseColor(style.getPropertyValue('--gfx-bg-color')),
+    side : parseColor(style.getPropertyValue('--gfx-side-color')),
+    front : parseColor(style.getPropertyValue('--gfx-front-color')),
+    top : parseColor(style.getPropertyValue('--gfx-top-color'))
+  };
 })();
 
 
@@ -95,11 +97,11 @@ const SCREEN_WIDTH = 320 * Options.scale;
 const SCREEN_HEIGHT = 240 * Options.scale;
 
 function setCanvasSize(id, width, height) {
-    let canvas = document.querySelector(`canvas#${id}`);
-    if(canvas) {
-        canvas.width = width;
-        canvas.height = height;
-    }
+  let canvas = document.querySelector(`canvas#${id}`);
+  if(canvas) {
+    canvas.width = width;
+    canvas.height = height;
+  }
 }
 
 setCanvasSize("screen", SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -109,161 +111,161 @@ setCanvasSize("plane", PLANE_WIDTH, PLANE_HEIGHT);
 // -- Image(Data) functions
 
 function fillImage(image, rgb, alpha = 255) {
-    for(let ofs=0; ofs < image.data.length;) {
-        image.data[ofs++] = rgb[0];
-        image.data[ofs++] = rgb[1];
-        image.data[ofs++] = rgb[2];
-        image.data[ofs++] = alpha;
-    }
+  for(let ofs=0; ofs < image.data.length;) {
+    image.data[ofs++] = rgb[0];
+    image.data[ofs++] = rgb[1];
+    image.data[ofs++] = rgb[2];
+    image.data[ofs++] = alpha;
+  }
 }
 
 function showImage(context, image) {
-    context?.putImageData(image, 0, 0);
+  context?.putImageData(image, 0, 0);
 }
 
 
 // -- HeightMap functions
 
 var HeightMap = function(width, height) {
-    this.width = width;
-    this.height = height;
-    this.data = new Float32Array(width * height);
+  this.width = width;
+  this.height = height;
+  this.data = new Float32Array(width * height);
 };
 
 function sampleHeightMap(x_range, y_range, width, height, fun) {
-    let heightMap = new HeightMap(width, height);
-    let ofs = 0;
+  let heightMap = new HeightMap(width, height);
+  let ofs = 0;
 
-    const dx = (x_range[1] - x_range[0]) / (width - 1);
-    const dy = (y_range[1] - y_range[0]) / (height - 1);
+  const dx = (x_range[1] - x_range[0]) / (width - 1);
+  const dy = (y_range[1] - y_range[0]) / (height - 1);
 
-    for(let row=0; row < height; ++row) {
-        const y = y_range[0] + row * dy;
-        for(let col=0; col < width; ++col, ++ofs) {
-            const x = x_range[0] + col * dx;
-            heightMap.data[ofs] = fun(x, y);
-        }
+  for(let row=0; row < height; ++row) {
+    const y = y_range[0] + row * dy;
+    for(let col=0; col < width; ++col, ++ofs) {
+      const x = x_range[0] + col * dx;
+      heightMap.data[ofs] = fun(x, y);
     }
+  }
 
-    return heightMap;
+  return heightMap;
 }
 
 function tonemapHeightMap(context, heightMap, scale = 255, shift = 0) {
-    let image = context.createImageData(heightMap.width, heightMap.height);
-    for(let ofs=0; ofs < heightMap.data.length; ++ofs) {
-        const gray = scale * heightMap.data[ofs] + shift;
-        image.data[4*ofs+0] = image.data[4*ofs+1] = image.data[4*ofs+2] = gray;
-        image.data[4*ofs+3] = 255;
-    }
-    return image;
+  let image = context.createImageData(heightMap.width, heightMap.height);
+  for(let ofs=0; ofs < heightMap.data.length; ++ofs) {
+    const gray = scale * heightMap.data[ofs] + shift;
+    image.data[4*ofs+0] = image.data[4*ofs+1] = image.data[4*ofs+2] = gray;
+    image.data[4*ofs+3] = 255;
+  }
+  return image;
 }
 
 
 // -- Julia set
 
 function julia(x, y, x_c, y_c) {
-    const t = 21;
-    const r_square = 60.0;
-    let k = 0;
-    let x_square = 0.0;
-    let y_square = 0.0;
-    do {
-        x_square = x*x;
-        y_square = y*y;
-        y = 2*x*y - y_c;
-        x = x_square - y_square - x_c;
-        k = k + 1;
-    } while(((k-1) < t) && ((x_square + y_square) < r_square));
-    return k / (t-1);
+  const t = 21;
+  const r_square = 60.0;
+  let k = 0;
+  let x_square = 0.0;
+  let y_square = 0.0;
+  do {
+    x_square = x*x;
+    y_square = y*y;
+    y = 2*x*y - y_c;
+    x = x_square - y_square - x_c;
+    k = k + 1;
+  } while(((k-1) < t) && ((x_square + y_square) < r_square));
+  return k / (t-1);
 }
 
 
 // -- ApfelPainter: Draw 3D plot of a height map
 
 function drawColumn(image, x, y0, height, rgb, alpha = 255) {
-    const y1 = y0 - height;
-    const ymin = Math.min(y0, y1);
-    const ymax = Math.max(y0, y1); 
+  const y1 = y0 - height;
+  const ymin = Math.min(y0, y1);
+  const ymax = Math.max(y0, y1); 
 
-    let ofs = 4 * (ymin*image.width + x);
-    for(let y=ymin; y <= ymax; ++y, ofs += 4 * image.width) {
-        image.data[ofs+0] = rgb[0];
-        image.data[ofs+1] = rgb[1];
-        image.data[ofs+2] = rgb[2];
-        image.data[ofs+3] = alpha;
-    }
+  let ofs = 4 * (ymin*image.width + x);
+  for(let y=ymin; y <= ymax; ++y, ofs += 4 * image.width) {
+    image.data[ofs+0] = rgb[0];
+    image.data[ofs+1] = rgb[1];
+    image.data[ofs+2] = rgb[2];
+    image.data[ofs+3] = alpha;
+  }
 }
 
-function ApfelPainter(image, heightMap, maxHeight = 64*Options.scale, colors = Colors) {
-    this.image = image;
-    this.heightMap = heightMap;
+function ApfelPainter(image, heightMap, maxHeight = 64*Options.scale) {
+  this.image = image;
+  this.heightMap = heightMap;
 
-    // Height of columns in 3D plot is scaled to min/max of heightMap times maxHeight
-    this.minValue = Math.min(...heightMap.data) - 0.1;
-    this.maxValue = Math.max(...heightMap.data);
+  // Height of columns in 3D plot is scaled to min/max of heightMap times maxHeight
+  this.minValue = Math.min(...heightMap.data) - 0.1;
+  this.maxValue = Math.max(...heightMap.data);
 
-    this.getHeight = function(row, col) {
-        const ofs = row * this.heightMap.width + col;
-        return Math.floor(maxHeight * (this.heightMap.data[ofs] - this.minValue) / (this.maxValue - this.minValue));
+  this.getHeight = function(row, col) {
+    const ofs = row * this.heightMap.width + col;
+    return Math.floor(maxHeight * (this.heightMap.data[ofs] - this.minValue) / (this.maxValue - this.minValue));
+  }
+
+  // Rear left corner of 3D plot "ground plane" on screen
+  this.x0 = (image.width - (heightMap.width + heightMap.height)) / 2 + this.heightMap.height;
+  this.y0 = (image.height - (heightMap.height - maxHeight)) / 2;
+
+  // The plot can be drawn step-wise for animation purposes
+  this.numSteps = heightMap.width*heightMap.height;
+  this.step = 0;
+
+  this.drawToStep = function(targetStep) {
+    if(targetStep >= this.numSteps) {
+      targetStep = this.numSteps - 1;
     }
 
-    // Rear left corner of 3D plot "ground plane" on screen
-    this.x0 = (image.width - (heightMap.width + heightMap.height)) / 2 + this.heightMap.height;
-    this.y0 = (image.height - (heightMap.height - maxHeight)) / 2;
-
-    // The plot can be drawn step-wise for animation purposes
-    this.numSteps = heightMap.width*heightMap.height;
-    this.step = 0;
-
-    this.drawToStep = function(targetStep) {
-        if(targetStep >= this.numSteps) {
-            targetStep = this.numSteps - 1;
-        }
-
-        for(let i=this.step; i <= targetStep; ++i) {
-            this.drawStep(i);
-        }
-
-        this.step = targetStep;
-        return targetStep < this.numSteps-1;
+    for(let i=this.step; i <= targetStep; ++i) {
+      this.drawStep(i);
     }
 
-    // The plot is drawn from back to front for correct occlusion (painter's algorithm)
-    this.drawStep = function(index) {
-        if(index < 0 || index >= this.numSteps)
-            return
+    this.step = targetStep;
+    return targetStep < this.numSteps-1;
+  }
 
-        const row = Math.floor(index / this.heightMap.width);
-        const col = index % this.heightMap.width;
-        
-        const height = this.getHeight(row, col);
+  // The plot is drawn from back to front for correct occlusion (painter's algorithm)
+  this.drawStep = function(index) {
+    if(index < 0 || index >= this.numSteps)
+      return
 
-        // Each successive row is shifted one to the left (via the "- row" term)
-        const x = this.x0 + col - row;
-        const y = this.y0 + row;
+    const row = Math.floor(index / this.heightMap.width);
+    const col = index % this.heightMap.width;
 
-        // draw _front_ line from (x,y) - (x,y+height-1)
-        drawColumn(this.image, x, y, height-1, colors.front);
-        // draw _side_ line from (x+1,y) - (x+1,y+height-1)
-        drawColumn(this.image, x+1, y, height-1, colors.side);
-        // draw _top_ point(s) via lines
-        topColor = Options.doDarkenTopColorDependingOnDepth 
-            ? colors.top.map((value) => 0.7*value + 0.3*value*(height / maxHeight))
-            : colors.top;
-        drawColumn(this.image, x, y-height, 1, topColor);
-        drawColumn(this.image, x+1, y-height, 1, topColor);
-    }
+    const height = this.getHeight(row, col);
+
+    // Each successive row is shifted one to the left (via the "- row" term)
+    const x = this.x0 + col - row;
+    const y = this.y0 + row;
+
+    // draw _front_ line from (x,y) - (x,y+height-1)
+    drawColumn(this.image, x, y, height-1, Colors.front);
+    // draw _side_ line from (x+1,y) - (x+1,y+height-1)
+    drawColumn(this.image, x+1, y, height-1, Colors.side);
+    // draw _top_ point(s) via lines
+    topColor = Options.doDarkenTopColorDependingOnDepth 
+      ? Colors.top.map((value) => 0.7*value + 0.3*value*(height / maxHeight))
+      : Colors.top;
+    drawColumn(this.image, x, y-height, 1, topColor);
+    drawColumn(this.image, x+1, y-height, 1, topColor);
+  }
 }
 
 
 // -- Main
 
 function saveImage(canvas, name="screenshot.png") {
-    const link = document.createElement("a");
-    link.setAttribute('download', name);
-    link.setAttribute('href', canvas.toDataURL("image/png"));
-    link.click();
-    link.remove();
+  const link = document.createElement("a");
+  link.setAttribute('download', name);
+  link.setAttribute('href', canvas.toDataURL("image/png"));
+  link.click();
+  link.remove();
 }
 
 const screenCanvas = document.getElementById("screen");
@@ -274,52 +276,55 @@ const recordingNumFrames = 100;
 
 if(screenContext) {
 
-    // Clear screen
-    var screen = screenContext.createImageData(SCREEN_WIDTH, SCREEN_HEIGHT);
-    fillImage(screen, Colors.background);
-    showImage(screenContext, screen);
+  // Clear screen
+  var screen = screenContext.createImageData(SCREEN_WIDTH, SCREEN_HEIGHT);
+  fillImage(screen, Colors.background);
+  showImage(screenContext, screen);
 
-    // Compute map of iterations
-    const t0 = performance.now();
-    const juliaIterations = sampleHeightMap(JuliaParameters.rangeX, JuliaParameters.rangeY, PLANE_WIDTH, PLANE_HEIGHT, (x,y) => julia(x, y, JuliaParameters.c_x, JuliaParameters.c_y));
-    console.log(`Computing Julia map took ${(performance.now() - t0).toFixed(1)} millisecond(s).`);
-    var planeContext = document.getElementById("plane")?.getContext('2d');
-    if(planeContext)
-        showImage(planeContext, tonemapHeightMap(planeContext, juliaIterations));
+  // Compute map of iterations
+  const t0 = performance.now();
+  const juliaIterations = sampleHeightMap(
+    JuliaParameters.rangeX, JuliaParameters.rangeY, PLANE_WIDTH, PLANE_HEIGHT, 
+    (x,y) => julia(x, y, JuliaParameters.c_x, JuliaParameters.c_y));
+  console.log(`Computing Julia map took ${(performance.now() - t0).toFixed(1)} millisecond(s).`);
 
-    // 3D plot
-    const painter = new ApfelPainter(screen, juliaIterations);
+  var planeContext = document.getElementById("plane")?.getContext('2d');
+  if(planeContext)
+    showImage(planeContext, tonemapHeightMap(planeContext, juliaIterations));
 
-    if(doRecording) {
-        for(let frame=0; frame <= recordingNumFrames; ++frame) {
-            painter.drawToStep(Math.ceil(frame * painter.numSteps / recordingNumFrames));
-            showImage(screenContext, screen);
-            saveImage(screenCanvas, `Apfelberge-${1000 + frame}.png`);
-        }
-    } else if(Options.animate) {
-        let start;
+  // 3D plot
+  const painter = new ApfelPainter(screen, juliaIterations);
 
-        function animateDraw(timestamp) {
-            if(start===undefined) {
-                start = timestamp;
-            }
-            const elapsed = timestamp - start;
-
-            const notComplete = painter.drawToStep(Math.floor(elapsed * Options.speed * (Options.scale*Options.scale)));
-
-            showImage(screenContext, screen);
-
-            if(notComplete) {
-                window.requestAnimationFrame(animateDraw);
-            }
-        }
-
-        window.requestAnimationFrame(animateDraw);
-
-    } else {
-        painter.drawToStep(painter.numSteps);
-        showImage(screenContext, screen);
+  if(doRecording) {
+    for(let frame=0; frame <= recordingNumFrames; ++frame) {
+      painter.drawToStep(Math.ceil(frame * painter.numSteps / recordingNumFrames));
+      showImage(screenContext, screen);
+      saveImage(screenCanvas, `Apfelberge-${1000 + frame}.png`);
     }
+  } else if(Options.animate) {
+    let start;
+
+    function animateDraw(timestamp) {
+      if(start===undefined) {
+        start = timestamp;
+      }
+      const elapsed = timestamp - start;
+
+      const notComplete = painter.drawToStep(Math.floor(elapsed * Options.speed * (Options.scale*Options.scale)));
+
+      showImage(screenContext, screen);
+
+      if(notComplete) {
+        window.requestAnimationFrame(animateDraw);
+      }
+    }
+
+    window.requestAnimationFrame(animateDraw);
+
+  } else {
+    painter.drawToStep(painter.numSteps);
+    showImage(screenContext, screen);
+  }
 }
 </script>
 </body>
