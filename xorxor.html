@@ -75,17 +75,17 @@
       }
     }
     
-    function blit2rgba(screen, rgba) {
+    function blit2imageData(screen, imageData) {
       const portrait = false;
       let src=0;
       for (let y=0; y < screen.height; ++y) {
         for (let x=0; x < screen.width; ++x, ++src) {
           let dst = portrait ? (x*screen.height + (screen.height-y-1))*4 : src*4;
           let bit = (screen.data[src] > 0) ? 255 : 0;
-          rgba[dst + 0] = bit;
-          rgba[dst + 1] = bit;
-          rgba[dst + 2] = bit;
-          rgba[dst + 3] = 255;
+          imageData.data[dst + 0] = bit;
+          imageData.data[dst + 1] = bit;
+          imageData.data[dst + 2] = bit;
+          imageData.data[dst + 3] = 255;
         }
       }
     }
@@ -120,7 +120,7 @@
       const SCREEN_WIDTH = canvas.width;
       const SCREEN_HEIGHT = canvas.height;
 
-      const rgba = new Uint8ClampedArray(SCREEN_WIDTH * SCREEN_HEIGHT * 4);
+      const imageData = ctx.createImageData(SCREEN_WIDTH, SCREEN_HEIGHT);
 
       var screen = new Screen(SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -181,8 +181,8 @@
         }
 
         // Blit to canvas
-        blit2rgba(screen, rgba);
-        ctx?.putImageData(new ImageData(rgba, SCREEN_WIDTH, SCREEN_HEIGHT), 0, 0);
+        blit2imageData(screen, imageData);
+        ctx?.putImageData(imageData, 0, 0);
       });
 
       // Draw sprite initially
