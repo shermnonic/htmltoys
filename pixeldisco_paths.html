@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<!-- www.386dx25.de 2023 -->
+<html lang="en">
+<head><meta charset="utf-8"/>
+<title>Hypnotoads pixel disco (along paths)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="author" content="386dx25, mnemonic@386dx25.de"/>
+<style>
+body {
+    text-align: center;
+}
+canvas { 
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  width: 100%;
+  max-width: 512px;
+}
+</style>
+</head>
+<body>
+<h1>Hypnotoads pixel disco (along paths)</h1>
+<p>by <a href="https://www.386dx25.de">386dx25.de</a>, edit in <a href="https://jsfiddle.net/386dx25/2xr40hcm/231/">jsfiddle</a></p>
+<canvas id="pixeldisco" width="128" height="128"></canvas>
+<script type="text/javascript">  
+// https://shermnonic.github.io/htmltoys/pixeldisco.htm 
+// by 386dx25.de
+const canvas = document.getElementById('pixeldisco');
+const ctx = canvas.getContext('2d');
+const width = canvas.width;
+const height = canvas.height;
+
+const kernel = [
+  0, 1, 0,
+  1, 0, 1,
+  0, 1, 0
+];
+var kernel_bias = 1111; // the _magic_ number
+const kernel_weigth = kernel.reduce((acc, a) => acc + a, 0.0);
+const kernel_radius = 1; // foored half-width of kernel
+
+function getScanlinePath() {
+  let path = new Int32Array((width - 2 * r) * (height - 2 * r));
+  let i = 0;
+  for (let y = r; y < height - r; y++) {
+    for (let x = r; x < width - r; x++, i++) {
+      path[i] = y * width + x;
+    }
+  }
+  return path;
+}
+
+function getDiamondPath() {
+  let path = [];
+  const m = height / 2;
+  for (let y = 0; y < height; y++) {
+    let [xl, xr] = (y < m) ? [m - y, m + y + 1] : [y - m, 3 * m - y];
+    for (let x = xl; x < xr; x++) {
+      path.push(y * width + x);
+    }
+  }
+  return path;
+}
+
+function getSpiralPath() {
+  const w = width; // assume square matrix of even size
+  let path = new Int32Array(w * w); // linear indices of path through matrix
+
+  path[0] = (w / 2) + (w / 2) * w; // center
+
+  const step = [1, w, -1, -w]; // right, down, left, up
+
+  let dir = 0; // direction
+  let m = 1; // step-size
+  let i = 1; // position on path
+  for (; m < w; m++) {
+    const last_edge = m >= w - 1;
+    for (let edge = 0; edge < (last_edge ? 1 : 2); edge++) {
+      for (let pixel = 0; pixel < (last_edge ? (w - 1) : m); pixel++) {
+        path[i] = path[i - 1] + step[dir];
+        i = i + 1;
+      }
+      dir = (dir + 1) % 4;
+    }
+  }
+  return path;
+}
+
+function getDiscPath() {
+  let path = [];
+  let r = Math.min(width, height) / 2;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if ((x - width / 2) * (x - width / 2) + (y - height / 2) * (y - height / 2) < r * r) {
+        path.push(y * width + x);
+      }
+    }
+  }
+  return path;
+}
+
+const path = getSpiralPath();
+
+function draw() {
+  const buffer = ctx.getImageData(0, 0, width, height);
+  const r = kernel_radius;
+  const stride = width * 4;
+  var data = buffer.data;
+  for (let i = 0; i < path.length; i++) {
+    const ofs = path[i] * 4;
+
+    // Convolve with kernel "in-place"
+    let value = 0;
+    let ki = 0;
+    for (let row = 0; row < 2 * r + 1; ++row) {
+      for (let col = 0; col < 2 * r + 1; ++col) {
+        let address = ofs + (row - r) * stride + (col - r) * 4;
+        const blue_channel = 2;
+        value += data[address + blue_channel] * kernel[ki++];
+      }
+    }
+    value = ((value + kernel_bias) / kernel_weigth) % 256;
+
+    data[ofs] = data[ofs + 1] = data[ofs + 2] = value;
+    data[ofs + 3] = 255;
+  }
+  ctx.putImageData(buffer, 0, 0);
+}
+
+function update() {
+  // http://codetheory.in/controlling-the-frame-rate-with-requestanimationframe/
+  const fps = 25.0;
+  setTimeout(function() {
+    window.requestAnimationFrame(update);
+    draw();
+  }, 1000 / fps);
+}
+
+window.requestAnimationFrame(update);
+</script>
+</body>
+</html>
