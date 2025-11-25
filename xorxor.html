@@ -30,26 +30,13 @@
   </p>
   <canvas id="screen" width=160 height=120></canvas>
   <script type="module">
-    function getParamsFromQueryString() {
-      let input = new URLSearchParams(document.location.search.substring(1));
-      if(input.get("num") && input.get("pattern") && input.get("clear")) {
-        console.log(input.get("clear"));
-        return {
-          numSprites : parseInt(input.get("num")),
-          pattern : parseInt(input.get("pattern")),
-          clearSprites : input.get("clear") === 'true'
-        }
-      }
-      return null;
-    }
+    const input = new URLSearchParams(document.location.search.substring(1));
 
-    const demoParams = getParamsFromQueryString() || {
-      numSprites : 3,
-      pattern: 1,
-      clearSprites : false
+    const demoParams = {
+      numSprites : input.get("num") || 3,
+      pattern: input.get("pattern") || 1,
+      clearSprites : input.get("clear") ? input.get("clear") === 'true' : false
     };
-    
-    console.log(demoParams);
   
     var Screen = function(width, height) {
       this.width = width;
