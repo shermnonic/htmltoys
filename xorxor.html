@@ -22,13 +22,19 @@
   </style>
 </head>
 <body>
-  <p><a href="https://386dx25.de/"><img width=37px height=37px alt="x-shaped logo" src="data:image/gif;base64,R0lGODlhJQAlAKEBAAAAAP///////////yH5BAEKAAIALAAAAAAlACUAAAKklI+py+1/gJSwxglCANZmDW4d9IUa92AUU5qoooLr0spNfb6wKbJ8zqrpdr+XaiIbEl2xZJJUxOWAJJzkt8lMPEJpdju6TnnKkeAq/oLNiKO7zDZgXHFfsU4jw+Of93nPdZSVhSeX5kRo1qQXMlM1V6TnIYN1+JTS14VEBpX0ZnniYHmUILUH6thWacd0w5QaEXWj0tlaGKsHGNa4dmuI4RvMVgAAOw=="/></a></p>
+  <p><a href="https://386dx25.de/"><img width=37px height=37px alt="x-shaped logo" src="data:image/gif;base64,R0lGODlhJ
+QAlAKEBAAAAAP///////////yH5BAEKAAIALAAAAAAlACUAAAKklI+py+1/gJSwxglCANZmDW4d9IUa92AUU5qoooLr0spNfb6wKbJ8zqrpdr+XaiIbEl2x
+ZJJUxOWAJJzkt8lMPEJpdju6TnnKkeAq/oLNiKO7zDZgXHFfsU4jw+Of93nPdZSVhSeX5kRo1qQXMlM1V6TnIYN1+JTS14VEBpX0ZnniYHmUILUH6thWacd
+0w5QaEXWj0tlaGKsHGNa4dmuI4RvMVgAAOw=="/></a></p>
   <p>
     <a href="?num=1&pattern=2&clear=false">0</a>
     <a href="?num=3&pattern=1&clear=false">1</a>
     <a href="?num=12&pattern=5&clear=true">2</a>
   </p>
   <canvas id="screen" width=160 height=120></canvas>
+  <noscript>
+  <p>(The animation on this page is only shown when Javascript is enabled/available.)</p>
+  </noscript>
   <script type="module">
     const input = new URLSearchParams(document.location.search.substring(1));
 
@@ -37,7 +43,7 @@
       pattern: input.get("pattern") || 1,
       clearSprites : input.get("clear") ? input.get("clear") === 'true' : false
     };
-  
+    
     var Screen = function(width, height) {
       this.width = width;
       this.height = height;
@@ -65,7 +71,7 @@
         }
       }
     };
-    
+
     function xorblit(sprite, screen) {
       for(let y=0; y < sprite.height; ++y) {
         let dst = screen.width*(Math.floor(sprite.y0)+y) + Math.floor(sprite.x0);
@@ -74,7 +80,7 @@
         }
       }
     }
-    
+
     function blit2imageData(screen, imageData) {
       const portrait = false;
       let src=0;
@@ -116,7 +122,7 @@
     function runDemo(timestamp) {
       const canvas = document.getElementById("screen");
       const ctx = canvas.getContext('2d');
-      
+
       const SCREEN_WIDTH = canvas.width;
       const SCREEN_HEIGHT = canvas.height;
 
@@ -156,7 +162,7 @@
         const xmin = 0;
         const ymax = screen.height - sprite.height;
         const ymin = 0;
-      
+
         sprite.x0 += sprite.vx;
         if(sprite.x0 >= xmax) { sprite.x0 = xmax-1; sprite.vx *= -1; }
         if(sprite.x0 <= xmin) { sprite.x0 = xmin+1; sprite.vx *= -1; }
@@ -187,7 +193,7 @@
 
       // Draw sprite initially
       sprites.forEach((sprite) => xorblit(sprite, screen));
-      
+  
       canvas.addEventListener("click", function(e) { pause=!pause; }, false)
 
       animation.launch();
