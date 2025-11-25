@@ -106,16 +106,10 @@ setCanvasSize("screen", SCREEN_WIDTH, SCREEN_HEIGHT);
 setCanvasSize("plane", PLANE_WIDTH, PLANE_HEIGHT);
 
 
-// -- Image functions
-
-var Image = function(width, height) {
-    this.width = width,
-    this.height = height;
-    this.data = new Uint8ClampedArray(width * height * 4);
-};
+// -- Image(Data) functions
 
 function fillImage(image, rgb, alpha = 255) {
-    for(let ofs=0; ofs < image.width*image.height*4;) {
+    for(let ofs=0; ofs < image.data.length;) {
         image.data[ofs++] = rgb[0];
         image.data[ofs++] = rgb[1];
         image.data[ofs++] = rgb[2];
@@ -124,7 +118,7 @@ function fillImage(image, rgb, alpha = 255) {
 }
 
 function showImage(context, image) {
-    context?.putImageData(new ImageData(image.data, image.width, image.height), 0, 0);
+    context?.putImageData(image, 0, 0);
 }
 
 
@@ -154,9 +148,9 @@ function sampleHeightMap(x_range, y_range, width, height, fun) {
     return heightMap;
 }
 
-function tonemapHeightMap(heightMap, scale = 255, shift = 0) {
-    let image = new Image(heightMap.width, heightMap.height);
-    for(let ofs=0; ofs < heightMap.width*heightMap.height; ++ofs) {
+function tonemapHeightMap(context, heightMap, scale = 255, shift = 0) {
+    let image = context.createImageData(heightMap.width, heightMap.height);
+    for(let ofs=0; ofs < heightMap.data.length; ++ofs) {
         const gray = scale * heightMap.data[ofs] + shift;
         image.data[4*ofs+0] = image.data[4*ofs+1] = image.data[4*ofs+2] = gray;
         image.data[4*ofs+3] = 255;
@@ -281,7 +275,7 @@ const recordingNumFrames = 100;
 if(screenContext) {
 
     // Clear screen
-    var screen = new Image(SCREEN_WIDTH, SCREEN_HEIGHT);
+    var screen = screenContext.createImageData(SCREEN_WIDTH, SCREEN_HEIGHT);
     fillImage(screen, Colors.background);
     showImage(screenContext, screen);
 
@@ -289,7 +283,9 @@ if(screenContext) {
     const t0 = performance.now();
     const juliaIterations = sampleHeightMap(JuliaParameters.rangeX, JuliaParameters.rangeY, PLANE_WIDTH, PLANE_HEIGHT, (x,y) => julia(x, y, JuliaParameters.c_x, JuliaParameters.c_y));
     console.log(`Computing Julia map took ${(performance.now() - t0).toFixed(1)} millisecond(s).`);
-    showImage(document.getElementById("plane")?.getContext('2d'), tonemapHeightMap(juliaIterations));
+    var planeContext = document.getElementById("plane")?.getContext('2d');
+    if(planeContext)
+        showImage(planeContext, tonemapHeightMap(planeContext, juliaIterations));
 
     // 3D plot
     const painter = new ApfelPainter(screen, juliaIterations);
