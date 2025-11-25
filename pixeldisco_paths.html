@@ -7,7 +7,7 @@
 <meta name="author" content="386dx25, mnemonic@386dx25.de"/>
 <style>
 body {
-    text-align: center;
+  text-align: center;
 }
 canvas { 
   image-rendering: crisp-edges;
@@ -21,11 +21,10 @@ canvas {
 <h1>Hypnotoads pixel disco (along paths)</h1>
 <p>by <a href="https://www.386dx25.de">386dx25.de</a>, edit in <a href="https://jsfiddle.net/386dx25/2xr40hcm/231/">jsfiddle</a></p>
 <canvas id="pixeldisco" width="128" height="128"></canvas>
-<script type="text/javascript">  
-// https://shermnonic.github.io/htmltoys/pixeldisco.htm 
-// by 386dx25.de
+<script type="text/javascript">
+
 const canvas = document.getElementById('pixeldisco');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
 const width = canvas.width;
 const height = canvas.height;
 
@@ -101,29 +100,28 @@ function getDiscPath() {
 const path = getSpiralPath();
 
 function draw() {
-  const buffer = ctx.getImageData(0, 0, width, height);
+  const imageData = ctx.getImageData(0, 0, width, height);
   const r = kernel_radius;
   const stride = width * 4;
-  var data = buffer.data;
-  for (let i = 0; i < path.length; i++) {
-    const ofs = path[i] * 4;
 
+  var pixels = new Uint32Array(imageData.data.buffer); // efficient view
+
+  for (let i = 0; i < path.length; i++) {
     // Convolve with kernel "in-place"
     let value = 0;
     let ki = 0;
+    const pathPixelIndex = path[i];
     for (let row = 0; row < 2 * r + 1; ++row) {
       for (let col = 0; col < 2 * r + 1; ++col) {
-        let address = ofs + (row - r) * stride + (col - r) * 4;
-        const blue_channel = 2;
-        value += data[address + blue_channel] * kernel[ki++];
+        let pixelIndex = pathPixelIndex + (row - r) * width + (col - r);
+        let red = pixels[pixelIndex] & 255;
+        value += red * kernel[ki++];
       }
     }
     value = ((value + kernel_bias) / kernel_weigth) % 256;
-
-    data[ofs] = data[ofs + 1] = data[ofs + 2] = value;
-    data[ofs + 3] = 255;
+    pixels[pathPixelIndex] = (255 << 24) | (value << 16) | (value << 8) | value;
   }
-  ctx.putImageData(buffer, 0, 0);
+  ctx.putImageData(imageData, 0, 0);
 }
 
 function update() {
