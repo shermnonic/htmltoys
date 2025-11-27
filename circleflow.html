@@ -79,6 +79,7 @@
     </canvas>
     <div id="parameters"></div>
     <div id="controls"></div>
+    <p><a href="#" id="permalink">[permalink]</a></p>
     <div id="history"></div>
     <footer>
         <p>by <a href="https://386dx25.de">386dx25.de</a>, 2025<br>
@@ -120,7 +121,7 @@
                     path.setAttribute('stroke-linejoin', 'round');
                     path.setAttribute('stroke-width', '1.5');
                     this.currentPath = path;
-                }                
+                }
             };
 
             this.stroke = function() { 
@@ -133,7 +134,7 @@
             };
 
             this.moveTo = function(x, y) { this.currentPathShape += 'M' + [x,y].map((v) => v.toFixed(1)).join(' '); }
-            this.lineTo = function(x, y) { this.currentPathShape += ' L' + [x,y].map((v) => v.toFixed(1)).join(' '); }            
+            this.lineTo = function(x, y) { this.currentPathShape += ' L' + [x,y].map((v) => v.toFixed(1)).join(' '); }
         }
 
         function drawLineStrip(renderer, points, center, scale) {
@@ -157,7 +158,7 @@
         }
 
         function getRandomFlowParameters() {
-            return new Array(8).fill(0.0).map(() => Math.random() * 2 - 1);
+            return new Array(8).fill(0.0).map(() => Math.random() * 2 - 1, 2);
         }
 
         function plotFigure(renderer, a1, a2) {
@@ -180,13 +181,14 @@
             }
         }
 
-        var pairOfFlowParameters = {
-            a1: getRandomFlowParameters(),
-            a2: getRandomFlowParameters(),
+        function toFixedNumbers(array, n) {
+            return array.map((x) => Number.parseFloat(x.toFixed(n)));
+        }
 
+        var pairOfFlowParameters = {
             randomize: function(canvas) {
-                this.a1 = getRandomFlowParameters();
-                this.a2 = getRandomFlowParameters();
+                this.a1 = toFixedNumbers(getRandomFlowParameters(), 2);
+                this.a2 = toFixedNumbers(getRandomFlowParameters(), 2);
             },
 
             set: function(newA1, newA2) {
@@ -194,15 +196,20 @@
                 this.a2 = newA2;
             },
 
-            updateUI: function() {
-                let element = document.getElementById('parameters');
-                if(element) {
-                    function format(a) {
-                        const s = (a) => a.map((x) => x.toFixed(3)).join(", ");
-                        return "(" + s(a.slice(0,4)) + "<br>" + s(a.slice(4,8)) + ")";
-                    }
-                    element.innerHTML = format(this.a1) + "<br>-<br>" + format(this.a2);                    
+            parse: function(s) {
+                const params = s.split("-to-").map(
+                (s) => s.substr(1, s.length-2).split(',').map(
+                    (s) => Number.parseFloat(s)));
+                if(params.length==2 && params[0].length==8 && params[1].length==8) {
+                    this.a1 = params[0];
+                    this.a2 = params[1];
                 }
+            },
+
+            string: function(sep=",", outerSep="-to-") {
+                return [this.a1, this.a2].map(
+                        (p) => "(" + p.map((x) => x.toFixed(2)).join(sep) + ")"
+                    ).join(outerSep)
             }
         };
 
@@ -212,7 +219,16 @@
             canvas.height = window.innerHeight;
             const renderer = new CanvasPathRenderer(canvas);
             plotFigure(renderer, pairOfFlowParameters.a1, pairOfFlowParameters.a2);
-            pairOfFlowParameters.updateUI();
+
+            let parameters = document.getElementById('parameters');
+            if(parameters) {
+                parameters.innerHTML = pairOfFlowParameters.string(", ", "<br>");
+            }
+            var permalink = document.getElementById('permalink');
+            if(permalink) {
+                const query_string = '?params=' + pairOfFlowParameters.string();
+                permalink.href = '//' + location.host + location.pathname + query_string;
+            }
         }
 
         function plotFigureAsSvg() {
@@ -230,9 +246,14 @@
             link.download = 'drawing.svg';
             link.href = dataUrl;
             return link;
-        }        
+        }
 
 
+        pairOfFlowParameters.randomize();
+        const input = new URLSearchParams(document.location.search.substring(1));
+        if(input.get("params")) {
+            pairOfFlowParameters.parse(input.get("params"));
+        }
         redraw();
 
         window.addEventListener('resize', redraw, false);
@@ -264,7 +285,7 @@
                 controls.appendChild(button);
                 button.onclick = fun;
             }
-            
+
             addButton("Randomize", 
                 function() { 
                     pairOfFlowParameters.randomize(); 
