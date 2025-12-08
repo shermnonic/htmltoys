@@ -148,11 +148,11 @@
             this.moveTo = function(x, y) { this.context.moveTo(x, y); }
             this.lineTo = function(x, y) { this.context.lineTo(x, y); }
             this.stroke = function() { this.context.stroke(); }
-            this.drawPoint = function(x,y) { this.context.fillRect(x,y,1,1); }
+            this.drawPoint = function(x, y, size=1) { this.context.fillRect(x, y, size, size); }
         }
 
-        function drawPoints(renderer, points) {
-            points.forEach((point) => renderer.drawPoint(point[0], point[1]));
+        function drawPoints(renderer, points, pointSize=1) {
+            points.forEach((point) => renderer.drawPoint(point[0], point[1], pointSize));
         }
 
         function drawLineStrip(renderer, points) {
