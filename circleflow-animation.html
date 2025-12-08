@@ -164,11 +164,11 @@
             renderer.stroke();
         }        
 
-        function createPointsOnCircle(n = 90) {
+        function createPointsOnCircle(n = 90, radius = 1.0) {
             return new Array(n).fill([0, 0]).map(
                 (value, index) => [
-                    Math.cos(2 * Math.PI * index / n),
-                    Math.sin(2 * Math.PI * index / n)
+                    radius * Math.cos(2 * Math.PI * index / n),
+                    radius * Math.sin(2 * Math.PI * index / n)
                 ]);
         }
 
