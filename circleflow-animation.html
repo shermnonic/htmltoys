@@ -175,10 +175,16 @@
         function createPointsOnGrid(m = 40, n = 40) {
             const scale = 5.0;
             return new Array(m*n).fill([0, 0]).map(
-                (value, index) => [
-                    scale * (-0.5 + (index % n) / n),
-                    scale * (-0.5 + (Math.floor(index / n)) / n)
-                ]);
+                (value, index) => {
+                    let column = (index % n);
+                    let row = Math.floor(index / n);
+                    let jitterX = (row % 2 == 0) ? 1.0 : 2.0; // shift odd rows
+                    let jitterY = 1.0;
+                    return [
+                        scale * (-0.5 + (column - 0.5 * jitterX) / (n - 1)),
+                        scale * (-0.5 + (row - 0.5 * jitterY) / (n - 1))
+                    ]
+                });
         }
 
         function shiftScalePoints(points, center, scale) {
@@ -192,13 +198,22 @@
         canvas.height = window.innerHeight;
         const renderer = new CanvasPathRenderer(canvas);
 
-        const gridPoints = createPointsOnGrid();
-        const circlePoints = createPointsOnCircle();
+        const Radius = 1.2;
+        const TimeBetweenTwoKnotsInSeconds = 3.0;
+        const PointSize = 2.3;
+        const PointCountAlongEdge = 62;
+        const LineWidth = 2.5;
+        
+        const pointOffset = -(PointSize / 2.0) / (5.0 * PointCountAlongEdge);
+        const gridPoints = createPointsOnGrid(PointCountAlongEdge, PointCountAlongEdge)
+            .filter((p) => (p[0]*p[0] + p[1]*p[1] < Radius*Radius))
+            .map((p) => [p[0] + pointOffset, p[1] + pointOffset]);
+        const circlePoints = createPointsOnCircle(180, Radius - pointOffset);
 
         const knots = new Array(100).fill(0).map((_, index) => getRandomFlowParameters());
         knots[0] = knots[1] = knots[knots.length-1] = getIdentityFlowParameters(); // start animation with circle
 
-        renderer.context.lineWidth = 1.5;
+        renderer.context.lineWidth = LineWidth;
 
         function drawFrame(t) {
 
@@ -207,7 +222,7 @@
             renderer.context.fillRect(0,0,canvas.width,canvas.height);
             renderer.context.fillStyle = 'rgba(64,64,64,1.0)'; // fillStyle determines point color
 
-            t = t/1500; // 1.5 seconds between two knots
+            t = t / (TimeBetweenTwoKnotsInSeconds*1000.0);
 
             const flowParameters = interpolateCurve(knots, t);
 
@@ -216,7 +231,7 @@
             const center = [renderer.width / 2, 0.8*renderer.height / 2];
             const scale = 100;
             
-            drawPoints(renderer, shiftScalePoints(advectPoints(gridPoints, flowParameters), center, scale));
+            drawPoints(renderer, shiftScalePoints(advectPoints(gridPoints, flowParameters), center, scale), PointSize);
             drawLineStrip(renderer, shiftScalePoints(advectPoints(circlePoints, flowParameters), center, scale));
         }
 
