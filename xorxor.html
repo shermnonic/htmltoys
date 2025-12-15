@@ -15,9 +15,27 @@
       image-rendering: pixelated;
     }
     #screen {
-      width: 100%;
-      max-width: 1024px;
       border: solid 1px black;
+    }
+    @media (orientation: landscape) {
+      #screen {
+        height: 75vh;
+      }
+    }
+    @media (orientation: portrait) {
+      #screen {
+        width: 75vw;
+        transform: scale(133%) translateY(28%) rotate(90deg);
+      }
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        color: white;
+        background: #121212;
+        
+      }
+      a { color: pink; }
+      canvas { filter: invert(100%); }
     }
   </style>
 </head>
