@@ -164,11 +164,24 @@
             renderer.stroke();
         }        
 
-        function createPointsOnCircle(n = 90, radius = 1.0) {
+        function createPointsOnCircle(n = 90, radius = 1.0, petals = 0) {
             return new Array(n).fill([0, 0]).map(
+                (value, index) => {
+                    let theta = 2 * Math.PI * index / n;
+                    let scale = (petals > 0) ? Math.cos(Math.ceil(petals)*theta) : 0;
+                    return [
+                        (radius + scale) * Math.cos(theta),
+                        (radius + scale) * Math.sin(theta)
+                    ];
+                });
+        }
+
+        function createPointsOnSquare(n = 90, edgeLength = 1.0) {
+            let sign = (x) => (x > 0) ? 1.0 : -1.0;
+            return createPointsOnCircle(n, 2 * edgeLength).map(
                 (value, index) => [
-                    radius * Math.cos(2 * Math.PI * index / n),
-                    radius * Math.sin(2 * Math.PI * index / n)
+                    (Math.abs(value[0]) > 0.5) ? sign(value[0]) * edgeLength : value[0], 
+                    (Math.abs(value[1]) > 0.5) ? sign(value[1]) * edgeLength : value[1]
                 ]);
         }
 
@@ -208,7 +221,7 @@
         const gridPoints = createPointsOnGrid(PointCountAlongEdge, PointCountAlongEdge)
             .filter((p) => (p[0]*p[0] + p[1]*p[1] < Radius*Radius))
             .map((p) => [p[0] + pointOffset, p[1] + pointOffset]);
-        const circlePoints = createPointsOnCircle(180, Radius - pointOffset);
+        const circlePoints = createPointsOnCircle(180, Radius - pointOffset, 4);
 
         const knots = new Array(100).fill(0).map((_, index) => getRandomFlowParameters());
         knots[0] = knots[1] = knots[knots.length-1] = getIdentityFlowParameters(); // start animation with circle
