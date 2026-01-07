@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<!-- 386dx25.de 2023 -->
+<html lang="en">
+<head><meta charset="utf-8"/>
+<title>Sphereputers</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="author" content="386dx25, mnemonic@386dx25.de"/>
+<script id="shadertoy" type="x-shader/x-fragment">
+
+// A re-creation of the cover image from "Computers and People", May-June 1987
+// by 386dx25 in 2023
+const float pi = 3.14159;
+
+// Rodriguez rotation macro proposed by FabriceNeyret2, thanks!
+#define rot(P,A,a) ( mix( A*dot(P,A), P, cos(a) ) + sin(a)*cross(P,A) )
+
+vec3 get_normalized_disc_coordinate(vec2 point, vec2 center, float radius)
+{
+    return vec3(vec2((point - center) / radius), 0.0);
+}
+
+// Return (u,v) params of hemisphere above disc at normalized 2D coordinate n
+// with latitude/longitude params in (0,1) each, rotated by gamma radians around x and y axis.
+// Assumes length(n) <= 1.0.
+vec2 get_normalized_disc_sphere_latlon(vec3 n, float gamma)
+{
+    // project disc to hemisphere
+    n.z = sqrt(1.0 - n.y*n.y - n.x*n.x);
+
+    // rotate
+    n = rot(rot(n,vec3(1,0,0),gamma), vec3(0,1,0),gamma);
+
+    // polar parameterization
+    vec2 polar = vec2(acos(n.z)/pi, (atan(n.y,n.x)+pi)/(2.0*pi));
+
+    return polar;
+}
+
+vec4 draw_disc_as_sphere_with_latlon(vec2 uv, float numLines, float linewidth) 
+{
+    vec2 offset = vec2(0.1,0.0); // slight offset in latitude to exclude pole
+    
+    vec2 latlon = abs(mod(numLines*uv+offset, 1.0) - vec2(0.5));
+    
+    float hlw = linewidth / 2.0;
+    vec2 b = 1.0 - 2.0*smoothstep(0.5-hlw, 0.5+hlw, latlon);
+    float o = b.x; // or a) lat/lon.grid: b.x*b.y; b) discs: n/20.0;
+    return vec4(o,o,o,1);
+}
+
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+    // Normalized pixel coordinates with 0 in center (one-liner taken from https://www.shadertoy.com/view/mdjXRR)
+    vec2 p = (fragCoord-.5*iResolution.xy)/iResolution.y;
+    
+    // Spheres as (x,y, radius, numLines) where (x,y) is normalized in [-1,1]
+    vec4 s[8];
+    s[0] = vec4( 0.04,  0.3,  0.11, 10.0);
+    s[1] = vec4(-0.2,  -0.2,  0.1,   5.0);
+    s[2] = vec4(-0.2,   0.2,  0.2,   8.0);
+    s[3] = vec4( 0.2,  -0.3,  0.2,  10.0);
+    s[4] = vec4( 0.0,   0.0,  0.25, 16.0);
+    s[5] = vec4( 0.3,   0.3,  0.3,   9.0);
+    s[6] = vec4(-0.5,   0.1,  0.15,  3.0);
+    s[7] = vec4(-0.25, -0.25, 0.35,  7.0);
+
+    // Evaluate which sphere to draw
+    for(int i=0; i<8; ++i)
+    {
+        // Absolute radius (in normalized screen system)
+        float r = s[i].z;
+        
+        // Normalized disc coordinate
+        vec3 n = get_normalized_disc_coordinate(p, s[i].xy, r);
+
+        float global_linewidth = 1.5 + 6.0*(1.0 - smoothstep(0.0,800.0,max(iResolution.x,iResolution.y)));
+
+        if(length(n) > 1.0 + global_linewidth*0.01) // TODO: Consider border width correctly
+        {
+            continue;
+        }
+
+        // Rotation angle
+        float individualize = + min(100.0,1.1/s[i].x) + 1.1/r;
+        float gamma = pi*iTime*0.1 + individualize; //  warp by adding length(n)
+
+        // Relative radius in (0,1) inside the disc
+        float dr = length(n);
+
+        // Spherical parameterization in (0,1), with z-coordinate 0/1 inside/outside of disc
+        vec2 sphere_uv = get_normalized_disc_sphere_latlon(n, gamma);
+
+        // Disc border
+        float dist_border = abs((dr-1.0)*r)*(1000.0/global_linewidth);
+        float border = smoothstep(0.0,1.0,dist_border);
+        vec4 border_color = vec4(border,border,border,1.0);
+        
+        // Sphere
+        float linewidth = global_linewidth*0.004/s[i].z; // TODO: Consider du/dv for constant linewidth across sphere
+        float dist = 0.3*s[i].w;
+        vec4 sphere_color = draw_disc_as_sphere_with_latlon(sphere_uv, s[i].w, dist*linewidth);
+        
+        fragColor = min(border_color, sphere_color);
+        break;
+    }
+}</script>
+<style>
+html, body {
+  text-align: center;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+@media (prefers-color-scheme: dark) {
+  body {
+    color: white;
+    background: #121212;
+  }
+  a { color: pink; }
+}
+footer {
+  position: absolute;
+  bottom: 0px;
+  left: 0px;
+  width: 100%;
+}
+#glcanvas {
+  border: 1px gray solid;
+  width: 80%;
+  height: 80%;
+  margin: auto;
+  z-index: -1;
+}
+</style>
+</head>
+<body>
+<h1 style="margin-bottom:0pt;">Sphereputers</h1>
+<canvas id="glcanvas" width="384" height="384">
+  Sorry, WebGL required.
+</canvas>
+<footer>
+  <p>
+    by <a href="https://386dx25.de">386dx25.de</a>, 2023<br>
+    (<a href="https://github.com/shermnonic/htmltoys">source code</a>,
+      <a href="https://www.shadertoy.com/view/mddcD7">shadertoy</a>)
+  </p>
+</footer>
+<script type="text/javascript">
+
+function updateGL(gl, program) {
+  // No interaction yet
+  // Todo: Choose ball parameters at random
+}
+
+// Minimal Shadertoy player
+// based on https://github.com/waldyrious/minimal-webgl
+
+const canvas = document.getElementById("glcanvas");
+
+window.onload = main;
+window.onresize = resize;
+
+function resize() {
+  var h = window.innerHeight;
+  var w = window.innerWidth;
+  // Auto-center & maximize to fit
+  canvas.style.width  = (h>w) ? "100%" : "auto";
+  canvas.style.height = (h>w) ? "auto" : "100%";
+  // Clamp resolution
+  canvas.width  = Math.min(Math.min(w,h), 768);
+  canvas.height = Math.min(Math.min(w,h), 768);
+}
+
+function main() {
+  try {
+    var gl = canvas.getContext("webgl");
+    if (!gl) throw "";
+  } catch(ex) {
+    console.error("Failed to initialize WebGL: "+ex);
+    return;
+  }
+
+  var fragmentShaderToy = window.document.getElementById("shadertoy").text;
+
+  var prog = buildShaderProgram(gl, 
+    `
+    attribute vec2 vpos;
+    attribute float tc;
+    void main() {
+      gl_Position = vec4(vpos,0.0,1.0);
+    }
+    `,
+    `
+    precision mediump float;
+    uniform vec2  iResolution; 
+    uniform float iTime;
+    
+    <TOYCODE>
+    
+    void main() {
+      vec4 fragColor=vec4(0.0);
+      vec2 fragCoord=gl_FragCoord.xy;
+      mainImage(fragColor,fragCoord);
+      gl_FragColor = fragColor;
+    }
+    `
+    .replace('<TOYCODE>',fragmentShaderToy)
+  );  
+
+  var buf = createBuffer(gl, prog, 2, [-1,-1,  -1, 1,  1,-1,  1, 1 ]);
+
+  function drawGL(t) {
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.uniform1f(gl.getUniformLocation(prog,'iTime'), t);
+    gl.uniform2fv(gl.getUniformLocation(prog,'iResolution'), [canvas.width, canvas.height]);
+    if(updateGL) updateGL(gl, prog);
+    buf.draw();
+  }
+
+  let timeStart;
+  function frame(timestamp) {
+    if(timestamp) {
+      timeStart = timeStart || timestamp;
+      drawGL((timestamp - timeStart)/1000);
+    }
+    window.requestAnimationFrame(frame);
+  }
+
+  resize();
+  frame();
+}
+
+function buildShaderProgram(gl, vsrc, fsrc) {
+  var prog = gl.createProgram();
+
+  function compileShader(type, source) {
+    var shader = gl.createShader(type=="vertex" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    gl.attachShader(prog, shader);
+    return shader;
+  };
+  
+  vs = compileShader('vertex', vsrc);
+  fs = compileShader('fragment', fsrc)
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.error(`Link failed: ${gl.getProgramInfoLog(prog)}`);
+    console.error(`vs info-log: ${gl.getShaderInfoLog(vs)}`);
+    console.error(`fs info-log: ${gl.getShaderInfoLog(fs)}`);
+    throw "Could not link the shader program!";
+  }
+  gl.useProgram(prog);
+  return prog;
+}
+
+function createBuffer(gl, prog, dim, verts) {
+  var buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+  var vpos = gl.getAttribLocation(prog, "vpos");
+  gl.enableVertexAttribArray(vpos);
+  gl.vertexAttribPointer(vpos, dim, gl.FLOAT, false, 0, 0);  
+  return {buffer: buffer, draw: function() {gl.drawArrays(gl.TRIANGLE_STRIP, 0, verts.length/2);} };
+}
+</script>
+</body>
+</html>
