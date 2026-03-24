@@ -1,174 +1,109 @@
-<!DOCTYPE html><!--*- coding: utf-8 -*-->
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8"> 
-    <title>386dx25 - html5toys</title>
+    <title>386dx25 - htmltoys</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-.wrapper {
-  display: flex;
-  flex-flow: row wrap;
-  text-align: center;
-}
-
-.wrapper > * {
-  padding: 0px;
-  flex: 1 100%;
-  min-width: 200px;
-}
-
-footer {
-  font-size: 80%;
-  margin-top: 20px;
-}
-
-article {
-  text-align: left;
-  background: #999;
-  color: #fff;
-  max-width: 1000px;
-  margin: auto;
-}
-
-.padding {
-  padding-left: 15px;
-  padding-right: 15px;
-}
-
-@media all and (min-width: 800px) {
-  article { flex: 3 0px; }
-  article { order: 1; }
-  footer  { order: 2; }
-}
-
-body {
-  padding: 1em;
-  font-family: "Verdana", sans-serif;
-  font-size: 96%;
-  font-weight: lighter;
-}
-
-@media (prefers-color-scheme: light) {
-  body {
-    background-image: url("img/serendipitous-a0.6900-b2.350.gr2.gif");    
-  }
-  a { color: blue; }
-}
-@media (prefers-color-scheme: dark) {
-  body {
-    color: #fff;
-    background: #121212;
-    background-image: url("img/serendipitous-a0.6900-b2.350.gr2.inverse.gif");
-  }
-  a { color: pink; }
-  .invertable { filter: invert(1); }
-}
-
-
-#logo {
-  width: 100%;
-  min-width: 200px;
-  max-width: 500px;
-  margin-top: -25px;
-}
-
-.navigation {
-  background: none;
-  list-style: none;
-  margin: auto;
-  padding: 0;
-  
-  max-width: 1000px;
-
-  display: -webkit-box;
-  display: -moz-box;
-  display: -ms-flexbox;
-  display: -webkit-flex;
-  display: flex;
-
-  flex-flow: row wrap;
-  justify-content: center;
-}
-
-.navigation a {
-  padding: 10px;
-  font-size: 142%;
-  text-decoration: underline;
-  display: block;
-}
-
-.navigation-item {
-  width: 120px;
-  height: 150px;
-  margin-top: 10px;
-  font-size: 75%;
-  align-self: flex-end;
-  border-radius: 3px;
-  background: rgba(255,255,255,0.0);
-}
-
-.navigation-item img {
-  max-height: 90px;
-  margin: auto;
-}
-
-.hover {
-  transition: 0.5s;
-  border: 1px rgba(0,0,0,0) solid;
-  background-image: radial-gradient(circle, rgba(128,128,128,0), rgba(128,128,128,0), rgba(128,128,128,0));;
-  transform: rotate(-2deg);
-}
-
-.hover:hover {
-  /*background: #ccc;*/
-  border: 1px black dashed;
-  background-image: radial-gradient(circle, rgba(128,128,128,1), rgba(128,128,128,0), rgba(128,128,128,0));  
-  transform: rotate(2deg);
-}
-
-@media all and (min-width: 600px) {
-  .navigation-item {
-    width: 200px;
-  }
-}
-
+    body {
+      max-width: 1200px;
+      margin: auto;
+    }
+    @media (prefers-color-scheme: light) {
+      body {
+        background-image: url("img/serendipitous-a0.6900-b2.350.gr2.gif");
+      }
+      a { color: blue; }
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        color: #fff;
+        background: #121212;
+        background-image: url("img/serendipitous-a0.6900-b2.350.gr2.inverse.gif");
+      }
+      a { color: pink; }
+      .invertable { filter: invert(1); }
+    }    
+    header #logo {
+      width: 100%;
+      min-width: 200px;
+      max-width: 500px;
+      margin-bottom: -50px;
+    }
+    header {
+      text-align: center;
+    }
+    header h1 {
+      padding-left: 142px;
+      color: #aaa;
+      font-family: monospace;
+    }
+    nav .navigation-item {
+      margin: 20px;
+    }
+    nav .navigation-item > a > img {
+      height: 100px;
+    }
+    nav .navigation {
+      display: flex;
+      flex-flow: row wrap;
+      justify-content: center;
+    }
+    nav ul.navigation {
+      list-style: none;
+    }
+    nav li.navigation-item {
+      text-align: center;
+    }
+    @media all and (min-width: 800px) {
+      nav li.navigation-item {
+        width: 200px;
+      }
+    }
+    .hover {
+      transition: 0.5s;
+      border: 1px rgba(128,128,128,0) dashed;
+      background-image: radial-gradient(circle, rgba(128,128,128,0), rgba(128,128,128,0), rgba(128,128,128,0));
+      transform: rotate(-2deg);
+    }
+    .hover:hover {
+      border: 1px black dashed;
+      background-image: radial-gradient(circle, rgba(128,128,128,1), rgba(128,128,128,0), rgba(128,128,128,0));  
+      transform: rotate(2deg);
+    }
+    footer {
+      text-align: center;
+    }
     </style>
   </head>
-
   <body>
-    <div class="wrapper">
-      <header class="header">
-        <img id="logo" src="img/386dx25.png"/>
-        <h1 style="color: #aaa; margin-top: -1em;">&nbsp;&nbsp;&nbsp;&lt;!-- html toys --&gt;</h1>
-      </header>
-      <nav>
-        <ul class="navigation">
-          <li class="navigation-item hover"><a href="chladflow.html">chladflow<br/><img src="img/icons/chladni-flower.png"/></a>(WebGL)</li>
-          <li class="navigation-item hover"><a href="sinescans2.htm">sinescans2<br/><img src="img/icons/sinescans2.png"/></a></li>
-          <li class="navigation-item hover"><a href="circleflow.html">circleflow<br/><img class="invertable" src="img/icons/circleflow.png"/></a></li>
-          <li class="navigation-item hover"><a href="circleflow-animation.html">circleflow-animation<br/><img class="invertable" src="img/icons/circleflow-animation.png"/></a></li>
-          <li class="navigation-item hover"><a href="pixeldisco.htm">pixeldisco<br/><img src="img/icons/pixeldisco.png"/></a></li>
-          <li class="navigation-item hover"><a href="phasespace/phasespace.html">phasespace<br/><img src="img/icons/phasespace.jpg"/></a>(WebGL)</li>
-          <li class="navigation-item hover"><a href="serendipitous.htm">serendipitous<br/><img src="img/icons/serendipitous.png"/></a></li>
-          <li class="navigation-item hover"><a href="balls.html">balls<br/><img src="img/icons/balls.png"/></a></li>
-          <li class="navigation-item hover"><a href="saturn.html">saturn<br/><img class="invertable" src="img/icons/saturn.png"/></a></li>
-          <li class="navigation-item hover"><a href="winiarski.html">winiarski<br/><img src="img/icons/winiarski.png"/></a></li>
-          <li class="navigation-item hover"><a href="xorxor.html">xorxor<br/><img src="img/icons/xorxor.png"/></a></li>
-          <li class="navigation-item hover"><a href="apfelberge.html">Apfelberge<br/><img src="img/icons/apfelberge.jpg"/></a></li>
-          <li class="navigation-item hover"><a href="hat.html">A.hat<br/><img src="img/icons/hat.png"/></a></li>
-          <li class="navigation-item hover"><a href="vidfx.html">vidfx<br/><img src="img/icons/vidfx.png"/></a></li>
-          <li class="navigation-item hover"><a href="decoherence.html">decoherence<br/><img src="img/icons/decoherence.png"/></a></li>
-          <li class="navigation-item hover"><a href="ascii-patterns.html">ascii-patterns<br/><img src="img/icons/ascii-patterns.png"/></a></li>
-          <li class="navigation-item hover"><a href="10print.html"><br/><img class="invertable" src="img/icons/10print.png"/></a></li>
-          <li class="navigation-item hover"><a href="sinescans.htm">sinescans<br/><img src="img/icons/sinescans.png"/></a></li>
-        </ul>
-      </nav>
-      <article>
-      <div class="padding">
-      </div>
-      </article>
-      <footer>made&nbsp;by&nbsp;<a href="https://386dx25.de">386dx25.de</a> - source code on <a href="https://github.com/shermnonic/htmltoys">github</a></footer>
-    </div>
+  <header>
+    <img id="logo" src="img/386dx25.png"/>
+    <h1>&lt;!--htmltoys&nbsp;--&gt;</h1>
+  </header>
+  <nav>
+    <ul class="navigation">
+      <li class="navigation-item hover"><a href="chladflow.html">chladflow<br/><img src="img/icons/chladni-flower.png"/></a></li>
+      <li class="navigation-item hover"><a href="sinescans2.htm">sinescans2<br/><img src="img/icons/sinescans2.png"/></a></li>
+      <li class="navigation-item hover"><a href="circleflow.html">circleflow<br/><img class="invertable" src="img/icons/circleflow.png"/></a></li>
+      <li class="navigation-item hover"><a href="circleflow-animation.html">circleflow-animation<br/><img class="invertable" src="img/icons/circleflow-animation.png"/></a></li>
+      <li class="navigation-item hover"><a href="pixeldisco.htm">pixeldisco<br/><img src="img/icons/pixeldisco.png"/></a></li>
+      <li class="navigation-item hover"><a href="phasespace/phasespace.html">phasespace<br/><img src="img/icons/phasespace.jpg"/></a></li>
+      <li class="navigation-item hover"><a href="serendipitous.htm">serendipitous<br/><img src="img/icons/serendipitous.png"/></a></li>
+      <li class="navigation-item hover"><a href="balls.html">balls<br/><img src="img/icons/balls.png"/></a></li>
+      <li class="navigation-item hover"><a href="saturn.html">saturn<br/><img class="invertable" src="img/icons/saturn.png"/></a></li>
+      <li class="navigation-item hover"><a href="winiarski.html">winiarski<br/><img src="img/icons/winiarski.png"/></a></li>
+      <li class="navigation-item hover"><a href="xorxor.html">xorxor<br/><img src="img/icons/xorxor.png"/></a></li>
+      <li class="navigation-item hover"><a href="apfelberge.html">Apfelberge<br/><img src="img/icons/apfelberge.jpg"/></a></li>
+      <li class="navigation-item hover"><a href="hat.html">A.hat<br/><img src="img/icons/hat.png"/></a></li>
+      <li class="navigation-item hover"><a href="vidfx.html">vidfx<br/><img src="img/icons/vidfx.png"/></a></li>
+      <li class="navigation-item hover"><a href="decoherence.html">decoherence<br/><img src="img/icons/decoherence.png"/></a></li>
+      <li class="navigation-item hover"><a href="ascii-patterns.html">ascii-patterns<br/><img src="img/icons/ascii-patterns.png"/></a></li>
+      <li class="navigation-item hover"><a href="10print.html">notorious<br/><img class="invertable" src="img/icons/10print.png"/></a></li>
+      <li class="navigation-item hover"><a href="sinescans.htm">sinescans<br/><img src="img/icons/sinescans.png"/></a></li>
+    </ul>
+  </nav>
+  <footer>made&nbsp;by&nbsp;<a href="https://386dx25.de">386dx25.de</a>&nbsp;2019-2026,<br>source&nbsp;code&nbsp;on&nbsp;<a href="https://github.com/shermnonic/htmltoys">github</a></footer>
   </body>
 </html>
