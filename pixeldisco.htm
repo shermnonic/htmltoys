@@ -163,49 +163,35 @@ var weight = 1.0; // the weight to normalize filter+constant
 var kernel_name = '';
 
 
+// legacy: serialize kernel with non-binary values
 function kernel_to_string(k) {
-  let s = '';
-  for( var i=0; i < k.length; ++i ) {
-    s += Math.floor(k[i]*255);
-    if( i < k.length-1 ) s += ',';
-  }
-  return s;
+  return k.map((val) => Math.floor(val*255)).join();
+}
+function kernel_from_string(s) {
+  return s.split(',',kernel.length).map((token) => parseInt(token)/255.0);
 }
 
-function kernel_from_string(s) {
-  let k = new Array(5*5);
-  let tokens = s.split(',',k.length);  
-  if( tokens && tokens.length == k.length ) {
-    for( var i=0; i < k.length; ++i ) { 
-      k[i] = parseInt(tokens[i])/255.0;
-    }
-    return k;
-  }
-  return null;
+// serialize binary kernel
+function binary_kernel_to_string(k) {
+  return k.map((val) => val > .5 ? '1' : '0').join("");
+}
+function kernel_from_binary_string(s) {
+  return s.split('').map((ch) => ch == '0' ? .0 : 1.)
 }
 
 function parse_query_string() {
-  // parse url parameters
-  let params = new URLSearchParams(document.location.search.substring(1));  
-  kernel_in = params.get("kernel");
-  con_in = parseInt(params.get("con"));
-  data_in = params.get("data");
-  if(kernel_in) set_kernel(kernel_in);
-  if(con_in) con = con_in;
-  if(data_in) {
-    let k = kernel_from_string(data_in);
-    if(k)
-      set_kernel_data(k);
-    else
-      console.log('Kernel data malformed');
-  }
+  let params = new URLSearchParams(document.location.search.substring(1)); 
+  con = parseInt(params.get("con") ?? con);  
+  set_kernel(params.get("kernel"));  
+  if(params.get("binary")) set_kernel_data(kernel_from_binary_string(params.get("binary")));
+  else if (params.get("data")) set_kernel_data(kernel_from_string(params.get("data"))); // legacy
 }
 
 function update_permalink() {
   if(permalink) {
     let query_string = '?' + 'kernel=' + kernel_name + '&con=' + con;
-    if( kernel_name==='data' || kernel_name==='random') 
-      query_string += '&data=' + kernel_to_string(kernel);
+    if( kernel_name==='binary' || kernel_name==='random' ) // only binary kernels now
+      query_string += '&binary=' + binary_kernel_to_string(kernel);
     permalink.href = '//' + location.host + location.pathname + query_string;
   }
 }
@@ -236,36 +222,43 @@ function update_kernel() {
 }
 
 function set_kernel_data( k ) {
-  if(k && k.length == kernel.length)
-    for(var i=0; i < kernel.length; ++i)
+  if(k && k.length == kernel.length) {
+    for(let i=0; i < k.length; ++i)
       kernel[i] = k[i];
-  update_kernel();
+    update_kernel();
+  } else if(k) {
+    console.log('kernel data malformed: ' + k);
+  }
 }
 
 function set_kernel( name ) {
-  switch (name) {
-  default:
-  case 'random':
-    for( var i=0; i < kernel.length; ++i )
-      kernel[i] = Math.round(Math.random()) % 2;
-    break;
-  case 'box':
-    kernel = [ .0, .0, .0, .0, .0,
-         .0,  1,  1,  1, .0,
-         .0,  1,  0,  1, .0,
-         .0,  1,  1,  1, .0,
-         .0, .0, .0, .0, .0 ];
-    break;
-  case 'cross':
-    kernel = [ .0, .0, .0, .0, .0,
-         .0, .0,  1, .0, .0,
-         .0,  1,  0,  1, .0,
-         .0, .0,  1, .0, .0,
-         .0, .0, .0, .0, .0 ];
-    break;
+  if(name) {
+    switch (name) {
+    default:
+    case 'random':
+      for( var i=0; i < kernel.length; ++i )
+        kernel[i] = Math.round(Math.random()) % 2;
+      break;
+    case 'box':
+      kernel = [ 
+          .0, .0, .0, .0, .0,
+          .0,  1,  1,  1, .0,
+          .0,  1,  0,  1, .0,
+          .0,  1,  1,  1, .0,
+          .0, .0, .0, .0, .0 ];
+      break;
+    case 'cross':
+      kernel = [ 
+          .0, .0, .0, .0, .0,
+          .0, .0,  1, .0, .0,
+          .0,  1,  0,  1, .0,
+          .0, .0,  1, .0, .0,
+          .0, .0, .0, .0, .0 ];
+      break;
+    }
+    kernel_name = name;
+    update_kernel();
   }
-  kernel_name = name;
-  update_kernel();
 }
 
 
@@ -284,7 +277,7 @@ function mousefunc(e) {
   var y = Math.floor( pos.y );
   if( x>=0 && x<5 && y>=0 && y<5 ) {
     if( kernel[y*5+x] > 0.5 ) kernel[y*5+x]=0.0; else kernel[y*5+x] = 1.0;
-    kernel_name = 'data';
+    kernel_name = 'binary'; // was 'data' for non-binary values
     update_kernel();
   }
 }
