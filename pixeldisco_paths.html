@@ -15,6 +15,15 @@ canvas {
   width: 100%;
   max-width: 512px;
 }
+@media (prefers-color-scheme: dark) {
+    body {
+        color: white;
+        background: #121212;
+    }
+    a {
+        color: pink;
+    }
+}
 </style>
 </head>
 <body>
@@ -122,7 +131,7 @@ const path = ((pattern) => {
 
 // -- Canvas & draw code --
 
-var clear = false;
+var clear = true;
 
 var canvas = document.createElement('canvas');
 canvas.id = "pixeldisco";
@@ -142,7 +151,7 @@ function draw() {
 
   if(clear) {
     clear = false;
-    pixels.fill(grayValueToRGBA(255));
+    path.forEach((pixelIndex) => pixels[pixelIndex] = grayValueToRGBA(255))
   }
   else {    
     // Convolve with kernel "in-place"
