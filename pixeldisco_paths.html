@@ -110,8 +110,15 @@ function makeDiscPath() {
   return path;
 }
 
-const pattern = querystring.get("pattern") || 'diamond';
-const path = (pattern === 'scanline') ? makeScanlinePath() : (pattern === 'disc') ? makeDiscPath() : (pattern === 'diamond') ? makeDiamondPath() : makeSpiralPath();
+const path = ((pattern) => {
+  switch(pattern) {
+    default:
+    case 'diamond':  return makeDiamondPath();
+    case 'disc':     return makeDiscPath();
+    case 'scanline': return makeScanlinePath();
+    case 'spiral':   return makeSpiralPath();
+  }
+})(querystring.get("pattern"));
 
 // -- Canvas & draw code --
 
