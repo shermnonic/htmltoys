@@ -12,8 +12,15 @@ body {
 canvas { 
   image-rendering: crisp-edges;
   image-rendering: pixelated;
-  width: 100%;
+  width: 80vmin;
+  min-width: 256px;
   max-width: 512px;
+}
+footer {
+  width: 100%;
+  position: absolute;
+  bottom: 5px;
+  margin: auto;
 }
 @media (prefers-color-scheme: dark) {
     body {
@@ -28,7 +35,16 @@ canvas {
 </head>
 <body>
 <h1>Hypnotoads pixel disco (along paths)</h1>
-<p>by <a href="https://www.386dx25.de">386dx25.de</a>, edit in <a href="https://jsfiddle.net/386dx25/2xr40hcm/231/">jsfiddle</a></p>
+<p>
+  <a href="?pattern=diamond">diamond</a>
+  <a href="?pattern=disc">disc</a>
+  <a href="?pattern=scanline">scanline</a>
+  <a href="?pattern=spiral">spiral</a>
+  <br/>
+</p>
+<footer>
+  <p>by <a href="https://www.386dx25.de">386dx25.de</a>, edit in <a href="https://jsfiddle.net/386dx25/2xr40hcm/231/">jsfiddle</a></p>
+</footer>
 <script type="text/javascript">
 
 const querystring = new URLSearchParams(document.location.search.substring(1));
