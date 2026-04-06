@@ -20,24 +20,37 @@ canvas {
 <body>
 <h1>Hypnotoads pixel disco (along paths)</h1>
 <p>by <a href="https://www.386dx25.de">386dx25.de</a>, edit in <a href="https://jsfiddle.net/386dx25/2xr40hcm/231/">jsfiddle</a></p>
-<canvas id="pixeldisco" width="128" height="128"></canvas>
 <script type="text/javascript">
 
-const canvas = document.getElementById('pixeldisco');
-const ctx = canvas.getContext('2d', { willReadFrequently: true });
-const width = canvas.width;
-const height = canvas.height;
+const querystring = new URLSearchParams(document.location.search.substring(1));
 
-const kernel = [
+// Canvas square size also determines path length
+var size = querystring.get("size") ? parseInt(querystring.get("size")) : 128;
+const width = size;
+const height = size;
+
+// -- Kernel --
+
+const defaultKernel = [
   0, 1, 0,
   1, 0, 1,
   0, 1, 0
 ];
-var kernel_bias = 1111; // the _magic_ number
-const kernel_weigth = kernel.reduce((acc, a) => acc + a, 0.0);
-const kernel_radius = 1; // foored half-width of kernel
+const kernelRadius = 1; // floored half-width of (square) kernel
 
-function getScanlinePath() {
+function parseKernel(s) {
+  let k = s.split('').map((ch) => ch == '0' ? .0 : 1.);
+  return (k.length == (kernelRadius*2+1)*(kernelRadius*2+1)) ? k : null;
+}
+
+const kernel = (querystring.get("kernel") ? parseKernel(querystring.get("kernel")) : defaultKernel) || defaultKernel;
+
+var kernelMagic = querystring.get("magic") ? parseInt(querystring.get("magic")) : 1111;  // the _magic_ number
+
+// -- Path --
+
+function makeScanlinePath() {
+  const r = kernelRadius;
   let path = new Int32Array((width - 2 * r) * (height - 2 * r));
   let i = 0;
   for (let y = r; y < height - r; y++) {
@@ -48,7 +61,7 @@ function getScanlinePath() {
   return path;
 }
 
-function getDiamondPath() {
+function makeDiamondPath() {
   let path = [];
   const m = height / 2;
   for (let y = 0; y < height; y++) {
@@ -60,7 +73,7 @@ function getDiamondPath() {
   return path;
 }
 
-function getSpiralPath() {
+function makeSpiralPath() {
   const w = width; // assume square matrix of even size
   let path = new Int32Array(w * w); // linear indices of path through matrix
 
@@ -84,7 +97,7 @@ function getSpiralPath() {
   return path;
 }
 
-function getDiscPath() {
+function makeDiscPath() {
   let path = [];
   let r = Math.min(width, height) / 2;
   for (let y = 0; y < height; y++) {
@@ -97,34 +110,61 @@ function getDiscPath() {
   return path;
 }
 
-const input = new URLSearchParams(document.location.search.substring(1));
-const pattern = input.get("pattern") || 'spiral';
-const path = (pattern === 'disc') ? getDiscPath() : (pattern === 'diamond') ? getDiamondPath() : getSpiralPath();
+const pattern = querystring.get("pattern") || 'diamond';
+const path = (pattern === 'scanline') ? makeScanlinePath() : (pattern === 'disc') ? makeDiscPath() : (pattern === 'diamond') ? makeDiamondPath() : makeSpiralPath();
+
+// -- Canvas & draw code --
+
+var clear = false;
+
+var canvas = document.createElement('canvas');
+canvas.id = "pixeldisco";
+canvas.width = width;
+canvas.height = height;
+canvas.addEventListener("mousedown", (e) => { clear = true; }, false);
+canvas.addEventListener('wheel', (e) => { if(e.buttons == 4) kernelMagic = 1111; else kernelMagic += Math.sign(e.deltaY); }, false);
+document.body.appendChild(canvas);
+
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
 function draw() {
   const imageData = ctx.getImageData(0, 0, width, height);
-  const r = kernel_radius;
-  const stride = width * 4;
-
   var pixels = new Uint32Array(imageData.data.buffer); // efficient view
 
-  for (let i = 0; i < path.length; i++) {
+  let grayValueToRGBA = (value) => (255 << 24) | (value << 16) | (value << 8) | value;
+
+  if(clear) {
+    clear = false;
+    pixels.fill(grayValueToRGBA(255));
+  }
+  else {    
     // Convolve with kernel "in-place"
-    let value = 0;
-    let ki = 0;
-    const pathPixelIndex = path[i];
-    for (let row = 0; row < 2 * r + 1; ++row) {
-      for (let col = 0; col < 2 * r + 1; ++col) {
-        let pixelIndex = pathPixelIndex + (row - r) * width + (col - r);
-        let red = pixels[pixelIndex] & 255;
-        value += red * kernel[ki++];
+
+    const r = kernelRadius;
+    const stride = width * 4;
+    const weight = kernel.reduce((acc, a) => acc + a, 0.0);
+
+    for (let i = 0; i < path.length; i++) {
+      let value = 0;
+      let ki = 0;
+      const pathPixelIndex = path[i];
+      for (let row = 0; row < 2 * r + 1; ++row) {
+        for (let col = 0; col < 2 * r + 1; ++col) {
+          let pixelIndex = pathPixelIndex + (row - r) * width + (col - r);
+          let red = pixels[pixelIndex] & 255;
+          value += red * kernel[ki++];
+        }
       }
+
+      value = ((value + kernelMagic) / weight) % 256;
+      
+      pixels[pathPixelIndex] = grayValueToRGBA(value);
     }
-    value = ((value + kernel_bias) / kernel_weigth) % 256;
-    pixels[pathPixelIndex] = (255 << 24) | (value << 16) | (value << 8) | value;
   }
   ctx.putImageData(imageData, 0, 0);
 }
+
+// -- Main loop --
 
 function update() {
   // http://codetheory.in/controlling-the-frame-rate-with-requestanimationframe/
