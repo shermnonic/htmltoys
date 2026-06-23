@@ -34,18 +34,22 @@ footer {
 </style>
 </head>
 <body>
-<h1>Hypnotoads pixel disco (along paths)</h1>
-<p>
-  <a href="?pattern=diamond">diamond</a>
-  <a href="?pattern=disc">disc</a>
-  <a href="?pattern=scanline">scanline</a>
-  <a href="?pattern=spiral">spiral</a>
-  <br/>
-</p>
+<header>
+  <h1>Hypnotoads pixel disco (along paths)</h1>
+  <p>
+    <a href="?pattern=diamond">diamond</a>
+    <a href="?pattern=disc">disc</a>
+    <a href="?pattern=scanline">scanline</a>
+    <a href="?pattern=spiral">spiral</a>
+    <br>  
+  </p>
+</header>  
 <footer>
+  <details><summary></summary><button onclick="toggleKernel()">Toggle kernel</button></details>
   <p>by <a href="https://www.386dx25.de">386dx25.de</a>, edit in <a href="https://jsfiddle.net/386dx25/2xr40hcm/231/">jsfiddle</a></p>
 </footer>
 <script type="text/javascript">
+'use strict';
 
 const querystring = new URLSearchParams(document.location.search.substring(1));
 
@@ -56,21 +60,23 @@ const height = size;
 
 // -- Kernel --
 
-const defaultKernel = [
-  0, 1, 0,
-  1, 0, 1,
-  0, 1, 0
-];
 const kernelRadius = 1; // floored half-width of (square) kernel
+const kernels = ["010101010", "111101111", "101010101"];
+var currentKernel = 0;
 
 function parseKernel(s) {
   let k = s.split('').map((ch) => ch == '0' ? .0 : 1.);
   return (k.length == (kernelRadius*2+1)*(kernelRadius*2+1)) ? k : null;
 }
 
-const kernel = (querystring.get("kernel") ? parseKernel(querystring.get("kernel")) : defaultKernel) || defaultKernel;
+var kernel = parseKernel(querystring.get("kernel") ?? kernels[0]) || parseKernel(kernels[0]);
 
 var kernelMagic = querystring.get("magic") ? parseInt(querystring.get("magic")) : 1111;  // the _magic_ number
+
+function toggleKernel() {
+  currentKernel = (currentKernel + 1) % kernels.length;
+  kernel = parseKernel(kernels[currentKernel]);
+}
 
 // -- Path --
 
@@ -154,7 +160,7 @@ canvas.id = "pixeldisco";
 canvas.width = width;
 canvas.height = height;
 canvas.addEventListener("mousedown", (e) => { clear = true; }, false);
-canvas.addEventListener('wheel', (e) => { if(e.buttons == 4) kernelMagic = 1111; else kernelMagic += Math.sign(e.deltaY); }, false);
+canvas.addEventListener('wheel', (e) => { if(e.buttons == 4) kernelMagic = 1111; else kernelMagic += Math.sign(e.deltaY); console.log(kernelMagic); }, false);
 document.body.appendChild(canvas);
 
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
