@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang=en>
+<head><meta charset="utf-8"/>
+<title>oneliner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+<style>
+body { text-align: center; }
+select { font-size: 120%; width: 100%; max-width: 768px; }
+canvas { width: 100%; max-width: 768px; }
+</style>
+</head>
+<body>
+<h1>oneliner</h1>
+<p>Adapted from a CPC Basic one-liner from Happy Computer 7/1986, p.83.</a></p>
+<canvas width="640px" height="400px" style="border: 1px solid black"></canvas>
+<p><select></select></p>
+<script>
+function calculateFantasie(a, w, l) {
+  let x = new Array(a);
+  let y = new Array(a);
+  x[0] = 320;
+  y[0] = 200;
+  for(let i=1; i < a; ++i) {
+    let theta = (w * i) * Math.PI / 180.0;
+    let d = l * i;
+    x[i] = x[i-1] - Math.sin(theta) * d
+    y[i] = y[i-1] - Math.cos(theta) * d
+  }
+  return [x, y];
+}
+
+function drawFantasie(ctx, x, y) {
+  const a = Math.min(x.length, y.length);
+  ctx.beginPath();
+  ctx.moveTo(x[0], y[0]);
+  for(let i=1; i < a; ++i) {
+    ctx.lineTo(x[i], y[i]);
+  }
+  ctx.stroke();
+}
+
+function redrawFantasie(f) {
+  const canvas = document.querySelector("canvas");
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  let [x, y] = calculateFantasie(f[1], f[2], f[3]);
+  drawFantasie(ctx, x, y);
+}
+
+// --- UI ---------------------------------------------------------------------
+
+const fantasien = [
+  ["Super Nova" , 400, 179   , 3 ],
+  ["Höhle links", 200, 46    , 1 ],
+  ["Sonne"      , 300, 170   , 1 ],
+  ["Spiralnebel", 500, 269   , 1 ],
+  ["Teppiche"   , 400, 80    , 1 ],
+  ["Symmetrie"  , 200, 90    , 2 ], // originally: 400, 90, 1
+  ["Sechseck"   , 100, 60    , 2 ],
+  ["Kombi-1"    , 300, 90.1  , 1 ],
+  ["Kombi-2"    , 300, 90.005, 1 ],
+  ["Kombi-3"    , 900, 90.2  , 2 ] ];
+
+var select = document.querySelector('select');
+fantasien.forEach((f, i) => {
+  var option = document.createElement('option');
+  option.text = f[0];
+  option.value = i;
+  select.add(option);
+});
+select.addEventListener("change", function() {
+  redrawFantasie(fantasien[this.value]);
+});
+
+redrawFantasie(fantasien[0]);
+</script>
+</body>
+</html>
