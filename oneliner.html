@@ -3,17 +3,24 @@
 <head><meta charset="utf-8"/>
 <title>oneliner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+<meta name="author" content="386dx25, mnemonic@386dx25.de"/>
 <style>
 body { text-align: center; }
-select { font-size: 120%; width: 100%; max-width: 768px; }
+input, select { font-size: 120%; }
+select { width: 100%; max-width: 768px; }
 canvas { width: 100%; max-width: 768px; }
 </style>
 </head>
 <body>
 <h1>oneliner</h1>
-<p>Adapted from a CPC Basic one-liner from Happy Computer 7/1986, p.83.</a></p>
+<p>Adaption of a CPC Basic one-liner from Happy Computer 7/1986, p.83.</p>
 <canvas width="640px" height="400px" style="border: 1px solid black"></canvas>
 <p><select></select></p>
+<p>
+  <input type="number" id="a" name="a" min="2" max="1000" step="10">
+  <input type="number" id="w" name="w" min="1" max="300" step="0.01">
+  <input type="number" id="l" name="l" min="0.5" max="10" step="0.5">
+</p>
 <script>
 function calculateFantasie(a, w, l) {
   let x = new Array(a);
@@ -49,7 +56,8 @@ function redrawFantasie(f) {
 
 // --- UI ---------------------------------------------------------------------
 
-const fantasien = [
+var fantasien = [
+  ["Custom"     , 282, 168.87, 6.5 ],
   ["Super Nova" , 400, 179   , 3 ],
   ["Höhle links", 200, 46    , 1 ],
   ["Sonne"      , 300, 170   , 1 ],
@@ -68,11 +76,37 @@ fantasien.forEach((f, i) => {
   option.value = i;
   select.add(option);
 });
+select.selectedIndex = "1";
 select.addEventListener("change", function() {
-  redrawFantasie(fantasien[this.value]);
+  var f = fantasien[this.value];
+  redrawFantasie(f);
+  updateInputs(f);
 });
 
-redrawFantasie(fantasien[0]);
+
+var input_a = document.getElementById("a");
+var input_w = document.getElementById("w");
+var input_l = document.getElementById("l");
+
+function onAnyInputChange() {
+  select.selectedIndex = "0";
+  var f = ["Custom", input_a.value, input_w.value, input_l.value];
+  fantasien[0] = f;
+  redrawFantasie(f);
+}
+
+input_a.addEventListener("change", onAnyInputChange);
+input_w.addEventListener("change", onAnyInputChange);
+input_l.addEventListener("change", onAnyInputChange);
+
+function updateInputs(f) {
+  input_a.value = f[1];
+  input_w.value = f[2];
+  input_l.value = f[3];
+}
+
+redrawFantasie(fantasien[1]);
+updateInputs(fantasien[1]);
 </script>
 </body>
 </html>
