@@ -1,65 +1,82 @@
-<!doctype html>
-<html lang=en>
-<head><meta charset="utf-8"/>
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><meta charset="utf-8">
 <title>Graphic Fantasy</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
-<meta name="author" content="386dx25, mnemonic@386dx25.de"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="author" content="386dx25, mnemonic@386dx25.de">
 <style>
 body { text-align: center; }
-canvas { width: 100%; max-width: 640px; 
-  image-rendering: crisp-edges; image-rendering: pixelated; }
+canvas { width: 100%; max-width: 640px; image-rendering: crisp-edges; image-rendering: pixelated; }
+input { font-size: 140%; text-align: center; width: 100%; max-width: 640px;}
+select { font-size: 120%; }
 </style>
 </head>
 <body>
 <h1>Graphic Fantasy</h1>
 <p>Adaption of "Graphic Fantasy" Basic listing from <a href="https://reader.kultmags.com/Happy%20Computer%201986-07">Happy Computer 7/1986</a>, p.56</p>
 <canvas width="320px" height="200px" style="border: 1px solid black"></canvas>
+<p><input type="text" id="formula" name="formula" size="42"/></p>
+<p>Choose preset: <select></select></p>
 <script>
-const canvas = document.querySelector("canvas");
-var ctx = canvas.getContext('2d');
-const width = canvas.width;
-const height = canvas.height;
-
-ctx.clearRect(0,0,canvas.width,canvas.height);
-
-const imageData = ctx.getImageData(0, 0, width, height);
-var pixels = new Uint32Array(imageData.data.buffer); // efficient view
-
-function PLOT(x, y) {
-  x = Math.floor(x);  y = Math.floor(y);  value = 64;
-  pixels[y * width + x] = (255 << 24) | (value << 16) | (value << 8) | value;
-}
-
-function SIN(x) { return Math.sin(x); }
-function COS(x) { return Math.cos(x); }
-function EXP(x) { return Math.exp(x); }
-function TAN(x) { return Math.tan(x); }
-
-const PI = Math.PI;
+var formula = "SIN(2*I)";
 
 function drawGraphicFantasy() {
+  // Setup canvas
+  const canvas = document.querySelector("canvas");
+  var ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+
+  // Configure for pixel drawing
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const imageData = ctx.getImageData(0, 0, width, height);
+  var pixels = new Uint32Array(imageData.data.buffer); // efficient view
+
+  // BASIC wrappers
+  function PLOT(x, y) {
+    x = Math.floor(x);  y = Math.floor(y);  value = 64;
+    pixels[y * width + x] = (255 << 24) | (value << 16) | (value << 8) | value;
+  }
+  
+  function SIN(x) { return Math.sin(x); }
+  function COS(x) { return Math.cos(x); }
+  function EXP(x) { return Math.exp(x); }
+  function TAN(x) { return Math.tan(x); }
+  const PI = Math.PI;
+  
+  // On syntax error report and do not plot
+  function isValidFormula() {
+    let I = 123.1;
+    var el = document.getElementById("formula");
+    try {
+      eval(formula);
+      el.setCustomValidity('');
+      return true;
+    } catch(error) {
+      el.setCustomValidity('Syntax Error');
+      el.reportValidity();
+      return false;
+    }
+  }
+  
+  if(!isValidFormula())
+  {
+    return false;
+  }
+    
+  // Adapted BASIC listing  
   let YA = 17;
   let A = 20;
   let DX = 0;
   let Y;
+  let evaluatedFormula = 0;
   while(YA < 179) {
     for(let X=20; X < 300; ++X) {
       let I = X / 44.4;
 
-      //Y = YA - A * SIN(2*I);  // (1)
-      //Y = YA - A * SIN((I-PI)*(I-PI));  // (2)
-      //Y = YA - A * (.3*SIN(10*I) + .7*SIN(2*I));  // (3)
+      evaluatedFormula = eval(formula);
 
-      //Y = YA - A * (.3*SIN(TAN(I*I)) + .7*SIN(3*I));  // (4)
-      //Y = YA - A * SIN(2*I) + TAN(I);  // (5)
-      //Y = YA - A * SIN( 1 / SIN(I - (I==0)) ) * SIN(3*I);  // (6)*
-
-      //Y = YA - A * (I - PI) * SIN(4*I);  // (7)
-      //Y = YA - A * SIN(5*I) * SIN(EXP(I - PI));  // (8)
-      //Y = YA - A * ((I - PI)*(I - PI) * SIN(2*I));  // (9)
-
-      //Y = YA - A * ((I - PI)*(I - PI)*(I - PI) * COS(4*I));  // (10)
-      Y = YA - A * (1 / COS((I - PI)*(I - PI) - (I==0)));
+      Y = YA - A * evaluatedFormula;
 
       if(A >= 19) {
         if((Y > 0) && (Y < 200)) {
@@ -67,14 +84,61 @@ function drawGraphicFantasy() {
         }
       }
     }
-
     YA = YA + 4;
     DX = 20 * SIN(Y / 25.0);
   };
+
+  ctx.putImageData(imageData, 0, 0);  // Blit to canvas
+  return true;
 }
 
 drawGraphicFantasy();
-ctx.putImageData(imageData, 0, 0);
+
+// --- UI ---------------------------------------------------------------------
+
+var select = document.querySelector('select');
+
+var formulaInput = document.getElementById("formula");
+formulaInput.value = formula;
+formulaInput.onchange = function(e) {
+  formula = e.target.value;
+  if(drawGraphicFantasy()) { // Update user formula only if valid
+    formulas[0] = formula;
+    select.selectedIndex = "0";
+    select.options[0].innerHTML = formula;
+  }
+}
+
+const formulas = [
+  "", // First entry stores user formula
+  "SIN(2*I)",  // (1)
+  "SIN((I-PI)*(I-PI))",  // (2)
+  "(.3*SIN(10*I) + .7*SIN(2*I))",  // (3)
+  "(.3*SIN(TAN(I*I)) + .7*SIN(3*I))",  // (4)
+  "SIN(2*I) + TAN(I)",  // (5)
+  "SIN( 1 / SIN(I - (I==0)) ) * SIN(3*I)",  // (6)*
+  "(I - PI) * SIN(4*I)",  // (7)
+  "SIN(5*I) * SIN(EXP(I - PI))",  // (8)
+  "((I - PI)*(I - PI) * SIN(2*I))",  // (9)
+  "((I - PI)*(I - PI)*(I - PI) * COS(4*I))",  // (10)
+  "(1 / COS((I - PI)*(I - PI) - (I==0)))"  // (11)*
+]; // (*) The 'I==0' term is verbatim from the BASIC listing and needs adaption.
+
+function setupUI() {
+  formulas.forEach((f, i) => {
+    var option = document.createElement('option');
+    option.text = f;
+    option.value = i;
+    select.add(option);
+  });
+  select.selectedIndex = "1";  // Start with first preset formula
+  select.onchange = function() {
+    formula = formulas[this.value];
+    formulaInput.value = formula;
+    drawGraphicFantasy();
+  };
+}
+
+setupUI();
 </script>
-</body>
-</html>
+</body></html>
