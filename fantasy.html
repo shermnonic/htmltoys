@@ -6,7 +6,7 @@
 <meta name="author" content="386dx25, mnemonic@386dx25.de">
 <style>
 body { text-align: center; }
-canvas { width: 100%; max-width: 640px; image-rendering: crisp-edges; image-rendering: pixelated; }
+canvas { width: 100%; max-width: 640px; image-rendering: pixelated; }
 input { font-size: 140%; text-align: center; width: 100%; max-width: 640px;}
 select { font-size: 120%; }
 </style>
@@ -58,35 +58,26 @@ function drawGraphicFantasy() {
       return false;
     }
   }
-  
+
   if(!isValidFormula())
   {
     return false;
   }
-    
+
   // Adapted BASIC listing  
-  let YA = 17;
-  let A = 20;
+  const A = 20;
   let DX = 0;
   let Y;
-  let evaluatedFormula = 0;
-  while(YA < 179) {
+  for(let YA=17; YA < 179; YA+=4) {
     for(let X=20; X < 300; ++X) {
       let I = X / 44.4;
-
-      evaluatedFormula = eval(formula);
-
-      Y = YA - A * evaluatedFormula;
-
-      if(A >= 19) {
-        if((Y > 0) && (Y < 200)) {
-          PLOT(X + DX, Y)
-        }
+      Y = YA - A * eval(formula);
+      if(YA >= 19 && Y > 0 && Y < 200) {
+        PLOT(X + DX, Y)
       }
     }
-    YA = YA + 4;
     DX = 20 * SIN(Y / 25.0);
-  };
+  }
 
   ctx.putImageData(imageData, 0, 0);  // Blit to canvas
   return true;
