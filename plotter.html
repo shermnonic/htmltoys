@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang=en>
+<head><meta charset="utf-8"/>
+<title>plotter</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="author" content="386dx25, mnemonic@386dx25.de"/>
+<style>
+body { text-align: center; }
+canvas { width: 100%; max-width: 1280px; aspect-ratio: 640/400; }
+</style>
+</head>
+<body>
+<h1>plotter</h1>
+<canvas width="640px" height="400px" style="border: 1px solid black"></canvas>
+<p><small>See also <a href="oneliner.html">oneliner</a> and <a href="fantasy.html">fantasy</a></small></p>
+<script>
+function calculateOneliner(a=282, w=168.87, l=6.5) {
+  let x = new Array(a);
+  let y = new Array(a);
+  x[0] = 320;
+  y[0] = 200;
+  for(let i=1; i < a; ++i) {
+    let theta = (w * i) * Math.PI / 180.0;
+    let d = l * i;
+    x[i] = x[i-1] - Math.sin(theta) * d
+    y[i] = y[i-1] - Math.cos(theta) * d
+  }
+  return [x, y];
+}
+
+function calculateFantasy(formula = "SIN(2*I)") {
+  var lines = new Array();
+
+  const scale = ([x, y], scale) => [x.map(v => v*scale), y.map(v => v*scale)];
+
+  // BASIC wrappers
+  function SIN(x) { return Math.sin(x); }
+  function COS(x) { return Math.cos(x); }
+  function EXP(x) { return Math.exp(x); }
+  function TAN(x) { return Math.tan(x); }
+  const PI = Math.PI;
+
+  // Adapted BASIC listing
+  let A = 20;
+  let DX = 0;
+  let Y;
+  for(let YA=17; YA < 179; YA+=4) {
+    let x = new Array();
+    let y = new Array();
+
+    for(let X=20; X < 300; ++X) {
+      let I = X / 44.4;
+      Y = YA - A * eval(formula);
+      if(YA >= 19 && Y > 0 && Y < 200) {
+        x.push(X + DX);
+        y.push(Y);
+      }
+    }
+    DX = 20 * SIN(Y / 25.0);
+
+    lines.push(scale([x, y], 2)); // scale 320x200 to 640x400
+  };
+
+  return lines;
+}
+
+function distance(a, b) {
+  return Math.sqrt((b[0] - a[0])*(b[0] - a[0]) + (b[1] - a[1])*(b[1] - a[1]));
+}
+
+function Plotter(ctx, scale, mode='lines') {
+  this.ctx = ctx;  this.scale = scale;  this.mode = mode; 
+  this.pointSize = scale;
+  this.lineLengthThreshold = null; //100;
+  this.previousPoint = [null, null];
+  this.beginLine = function() { this.ctx.beginPath(); }
+  this.endLine = function() { this.ctx.stroke(); }
+  this.pset = function(x, y) { const s=this.scale, w=this.pointSize; this.ctx.fillRect(s*x-.5*w, s*y-.5*w, w,w) };
+  this.firstPoint = function(x, y) { 
+    if(this.mode=='lines') {
+      if(this.lineLengthThreshold && distance([x, y], this.lastPoint) > this.lineLengthThreshold) {
+        this.endLine();  // cut too long lines (e.g. for TAN formulas)
+        this.nextPoint(this.scale*x, this.scale*y);
+      } else {
+        this.ctx.moveTo(this.scale*x, this.scale*y);
+      }
+    } else {
+      this.pset(x, y); 
+    }
+    this.previousPoint = [x, y];
+  }
+  this.nextPoint = function(x, y) { 
+    if(this.mode=='lines') this.ctx.lineTo(this.scale*x, this.scale*y); else this.pset(x,y); 
+    this.previousPoint = [x, y];
+  }
+}
+
+function plot(plotter, lines) {
+  lines.forEach( ([x, y]) => {
+    plotter.beginLine();
+    plotter.firstPoint(x[0], y[0]);
+    for(let i=1; i < x.length; ++i) { // assume x.length == y.length
+      plotter.nextPoint(x[i], y[i]);
+    }
+    plotter.endLine();
+  });
+}
+
+function draw(canvas) {
+  const scale = canvas.height / 400.0;
+  var ctx = canvas.getContext('2d');
+  ctx.lineWidth = 0.5 * scale;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  let lines;
+  lines = [calculateOneliner()];
+  //lines = [calculateOneliner(900, 90.2)];
+  //lines = calculateFantasy();
+  lines = calculateFantasy("(1 / COS((I - PI)*(I - PI) - (I==0)))");
+
+  var linePlotter = new Plotter(ctx, scale, 'lines');
+  plot(linePlotter, lines);
+
+  var pointPlotter = new Plotter(ctx, scale, 'points');
+  pointPlotter.pointSize *= 2.0;
+  plot(pointPlotter, lines);
+}
+
+const canvas = document.querySelector("canvas");
+
+function resize() {
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+  draw(canvas);
+}
+window.addEventListener('resize', resize, false);
+resize();
+</script>
+</body>
+</html>
