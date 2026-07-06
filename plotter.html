@@ -6,7 +6,8 @@
 <meta name="author" content="386dx25, mnemonic@386dx25.de"/>
 <style>
 body { text-align: center; }
-canvas { width: 100%; max-width: 1280px; aspect-ratio: 640/400; }
+@media (orientation: landscape) { canvas { width: 100%; max-width: 1280px; aspect-ratio: 640/400; } }
+@media (orientation: portrait) { canvas { width: 100%; max-height: 1080px; aspect-ratio: 400/640; } }
 </style>
 </head>
 <body>
@@ -60,18 +61,21 @@ function distance(a, b) {
   return Math.sqrt((b[0] - a[0])*(b[0] - a[0]) + (b[1] - a[1])*(b[1] - a[1]));
 }
 
-function Plotter(ctx, scale, mode='lines') {
+function Plotter(ctx, scale, mode='lines', flipxy=false) {
   this.mode = mode; 
   this.pointSize = scale;
   this.beginLine = () => ctx.beginPath();
   this.endLine = () => ctx.stroke();
   this.pset = function(x, y) { 
+    if(flipxy) [x, y] = [y, x];
     const w=this.pointSize; ctx.fillRect(scale*x-.5*w, scale*y-.5*w, w,w) 
   }
   this.firstPoint = function(x, y) { 
+    if(flipxy) [x, y] = [y, x];
     (this.mode=='lines') ? ctx.moveTo(scale*x, scale*y) : this.pset(x, y);
   }
   this.nextPoint = function(x, y) { 
+    if(flipxy) [x, y] = [y, x];
     (this.mode=='lines') ? ctx.lineTo(scale*x, scale*y) : this.pset(x, y); 
   }
 }
@@ -86,11 +90,10 @@ function plot(plotter, lines) {
   });
 }
 
-function draw(canvas, dpr=1) {
-  const scale = canvas.height / 400.0;
+function draw(canvas, scale=1, flipxy=false) {
   var ctx = canvas.getContext('2d');
   ctx.lineWidth = 0.5 * scale;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   let lines;
   lines = [calculateOneliner()];
@@ -98,7 +101,7 @@ function draw(canvas, dpr=1) {
   //lines = calculateFantasy();
   lines = calculateFantasy("(1 / COS((I - PI)*(I - PI) - (I==0)))");
 
-  var linePlotter = new Plotter(ctx, scale, 'lines');
+  var linePlotter = new Plotter(ctx, scale, 'lines', flipxy);
   plot(linePlotter, lines);
 
   // var pointPlotter = new Plotter(ctx, scale, 'points');
@@ -112,7 +115,10 @@ function resize() {
   var dpr = window.devicePixelRatio;
   canvas.width = canvas.clientWidth * dpr;
   canvas.height = canvas.clientHeight * dpr;
-  draw(canvas, dpr);
+
+  const portrait = canvas.height > canvas.width;
+  const scale = (portrait ? canvas.width : canvas.height) / 400.0;
+  draw(canvas, scale, portrait);
 }
 window.addEventListener('resize', resize, false);
 resize();
