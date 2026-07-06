@@ -9,6 +9,11 @@ body { text-align: center; }
 input, select { font-size: 120%; }
 select { width: 100%; max-width: 768px; }
 canvas { width: 100%; max-width: 768px; }
+@media (prefers-color-scheme: dark) {
+  body { color: white; background: #121212; }
+  a { color: pink; }
+  canvas { filter: invert(100%); }
+}
 </style>
 </head>
 <body>
