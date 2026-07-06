@@ -8,6 +8,11 @@
 body { text-align: center; }
 @media (orientation: landscape) { canvas { width: 100%; max-width: 1280px; aspect-ratio: 640/400; } }
 @media (orientation: portrait) { canvas { width: 100%; max-height: 1080px; aspect-ratio: 400/640; } }
+@media (prefers-color-scheme: dark) {
+  body { color: white; background: #121212; }
+  a { color: pink; }
+  canvas { filter: invert(100%); }
+}
 </style>
 </head>
 <body>
