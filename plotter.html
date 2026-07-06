@@ -18,6 +18,7 @@ body { text-align: center; }
 <body>
 <h1>plotter</h1>
 <canvas width="640px" height="400px" style="border: 1px solid black"></canvas>
+<p><input type="checkbox" id="lines" name="lines" checked><label for="lines"> Lines </label></p>
 <p><small>See also <a href="oneliner.html">oneliner</a> and <a href="fantasy.html">fantasy</a></small></p>
 <script>
 function calculateOneliner(a=282, w=168.87, l=6.5) {
@@ -72,7 +73,6 @@ function Plotter(ctx, scale, mode='lines', flipxy=false) {
   this.beginLine = () => ctx.beginPath();
   this.endLine = () => ctx.stroke();
   this.pset = function(x, y) { 
-    if(flipxy) [x, y] = [y, x];
     const w=this.pointSize; ctx.fillRect(scale*x-.5*w, scale*y-.5*w, w,w) 
   }
   this.firstPoint = function(x, y) { 
@@ -95,6 +95,10 @@ function plot(plotter, lines) {
   });
 }
 
+
+const linesCheckbox = document.querySelector('#lines');
+linesCheckbox.addEventListener('change', resize);
+
 function draw(canvas, scale=1, flipxy=false) {
   var ctx = canvas.getContext('2d');
   ctx.lineWidth = 0.5 * scale;
@@ -106,12 +110,8 @@ function draw(canvas, scale=1, flipxy=false) {
   //lines = calculateFantasy();
   lines = calculateFantasy("(1 / COS((I - PI)*(I - PI) - (I==0)))");
 
-  var linePlotter = new Plotter(ctx, scale, 'lines', flipxy);
-  plot(linePlotter, lines);
-
-  // var pointPlotter = new Plotter(ctx, scale, 'points');
-  // pointPlotter.pointSize *= 2.0;
-  // plot(pointPlotter, lines);
+  var plotter = new Plotter(ctx, scale, linesCheckbox.checked ? 'lines' : 'points', flipxy);
+  plot(plotter, lines);
 }
 
 const canvas = document.querySelector("canvas");
