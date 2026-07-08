@@ -34,27 +34,30 @@ function calculateOneliner(a=282, w=168.87, l=6.5) {
   return pts;
 }
 
-function calculateFantasy(formula = "SIN(2*I)", step=4) {
-
+function calculateFantasy(formula = "SIN(2*I)", steps=[4, 1], variant=0) {
   var lines = [];
   var pts = [];
-  function addPoint(x, y) { pts.push([2*x, 2*y]); }
+  function addPoint(x, y) { pts.push([2*x, 2*y]); } // scale 320x200 to 640x400
   function emitLine() { if(pts.length > 0) { lines.push(pts); } pts = []; }
 
   // BASIC wrappers
+  const ABS = (x) => Math.abs(x);
   const SIN = (x) => Math.sin(x);  const COS = (x) => Math.cos(x);
   const EXP = (x) => Math.exp(x);  const TAN = (x) => Math.tan(x);
   const PI = Math.PI;
 
   // Adapted BASIC listing
   let A = 20;  let DX = 0;  let Y;
-  for(let YA=17; YA < 179; YA += step) {
-    for(let X=20; X < 300; ++X) {
+  for(let YA=17; YA < 179; YA += steps[0]) {
+    for(let X=20; X < 300; X += steps[1]) {
       let I = X / 44.4;
+
       Y = YA - A * eval(formula);
+
       if(YA >= 19) (Y > 0 && Y < 200) ? addPoint(X + DX, Y) : emitLine();
     }
     DX = 20 * SIN(Y / 25.0);
+    if(variant == 1) DX = ABS(DX);
 
     emitLine();
   };
