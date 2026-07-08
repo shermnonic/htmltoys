@@ -34,9 +34,12 @@ function calculateOneliner(a=282, w=168.87, l=6.5) {
   return pts;
 }
 
-function calculateFantasy(formula = "SIN(2*I)") {
-  var lines = new Array();
-  const scale = (pts, scale) => pts.map(([x, y]) => [x*scale, y*scale]);
+function calculateFantasy(formula = "SIN(2*I)", step=4) {
+
+  var lines = [];
+  var pts = [];
+  function addPoint(x, y) { pts.push([2*x, 2*y]); }
+  function emitLine() { if(pts.length > 0) { lines.push(pts); } pts = []; }
 
   // BASIC wrappers
   const SIN = (x) => Math.sin(x);  const COS = (x) => Math.cos(x);
@@ -45,26 +48,18 @@ function calculateFantasy(formula = "SIN(2*I)") {
 
   // Adapted BASIC listing
   let A = 20;  let DX = 0;  let Y;
-  for(let YA=17; YA < 179; YA+=4) {
-    let pts = new Array();
-
+  for(let YA=17; YA < 179; YA += step) {
     for(let X=20; X < 300; ++X) {
       let I = X / 44.4;
       Y = YA - A * eval(formula);
-      if(YA >= 19 && Y > 0 && Y < 200) {
-        pts.push([X + DX, Y]);
-      }
+      if(YA >= 19) (Y > 0 && Y < 200) ? addPoint(X + DX, Y) : emitLine();
     }
     DX = 20 * SIN(Y / 25.0);
 
-    if(pts.length > 0) lines.push(scale(pts, 2)); // scale 320x200 to 640x400
+    emitLine();
   };
 
   return lines;
-}
-
-function distance(a, b) {
-  return Math.sqrt((b[0] - a[0])*(b[0] - a[0]) + (b[1] - a[1])*(b[1] - a[1]));
 }
 
 function Plotter(ctx, scale, mode='lines', flipxy=false) {
@@ -105,10 +100,11 @@ function draw(canvas, scale=1, flipxy=false) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   let lines;
-  lines = [calculateOneliner()];
-  //lines = [calculateOneliner(900, 90.2)];
+  //lines = [calculateOneliner()];
+  //lines = [calculateOneliner(360, 90.2, 2.1)];
   //lines = calculateFantasy();
-  lines = calculateFantasy("(1 / COS((I - PI)*(I - PI) - (I==0)))");
+  lines = calculateFantasy("(1 / COS((I - PI)*(I - PI) - (I==0)))", 3);
+  //lines = calculateFantasy("SIN(2*I) + TAN(I)");
 
   var plotter = new Plotter(ctx, scale, linesCheckbox.checked ? 'lines' : 'points', flipxy);
   plot(plotter, lines);
