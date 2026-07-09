@@ -67,6 +67,29 @@ function calculateFantasy(formula = "SIN(2*I)", steps=[4, 1], variant=0) {
   return lines;
 }
 
+function calculateGridcurve(steps = 10, [W, H] = [640, 400], [x0s, y0s] = [0,0]) {
+  var lines = [];
+  const [x0, xs] = [Math.abs(x0s), x0s>=0 ? +1 : -1];
+  const [y0, ys] = [Math.abs(y0s), y0s>=0 ? +1 : -1];
+  for(let i=0; i < steps; ++i) {
+    let y = H * ((steps - i) / steps);
+    let x = W * ((i + 1) / steps);
+    lines.push([[x0, y0 + ys * y], [x0 + xs * x, y0]]);
+  }
+  return lines;
+}
+
+function calculateGridstar(steps = 10) {
+  return [].concat(
+    calculateGridcurve(steps, [640, 400], [0, 0]),
+    calculateGridcurve(steps, [640, 400], [-640, -400]),
+    calculateGridcurve(steps, [200, 200], [320, -200]),
+    calculateGridcurve(steps, [200, 200], [320, 200]),
+    calculateGridcurve(steps, [200, 200], [-320, 200]),
+    calculateGridcurve(steps, [200, 200], [-320, -200]),
+  );
+}
+
 // ---- Plotter ----------------------------------------------------------------
 
 function Plotter(ctx, scale, mode='lines', flipxy=false) {
@@ -109,7 +132,7 @@ const info = document.querySelector('#info');
 var currentPlot = 0;
 canvas.addEventListener('click', (e) => { 
   let l = (e.clientX - canvas.getBoundingClientRect().left) < (canvas.clientWidth/2);
-  currentPlot = Math.abs(currentPlot +  (l ? -1 : +1));
+  currentPlot = currentPlot +  (l ? -1 : +1);
   resize(); 
 }, false);
 
@@ -130,8 +153,10 @@ function draw(canvas, scale=1, flipxy=false) {
     () => calculateFantasy("SIN(2*I) + TAN(I)", [1, 14]),
     () => calculateFantasy("SIN(4*I)", [1, 4], 1),
     () => calculateFantasy("SIN(3*I)", [1, 1], 1),
+    () => calculateGridstar(42),
   ];
 
+  while(currentPlot < 0) currentPlot += generators.length;
   let lines = generators[currentPlot % generators.length]();
 
   const numPoints = lines.reduce((acc, l) => { return acc + l.length; }, 0)
