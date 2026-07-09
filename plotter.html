@@ -18,7 +18,8 @@ body { text-align: center; }
 <body>
 <h1>plotter</h1>
 <canvas width="640px" height="400px" style="border: 1px solid black"></canvas>
-<p><input type="checkbox" id="lines"><label for="lines"> Lines</label></p>
+<p><input type="checkbox" id="lines" checked><label for="lines"> Lines</label></p>
+<p id="info"></p>
 <script>
 // ---- Functions --------------------------------------------------------------
 
@@ -103,26 +104,39 @@ const canvas = document.querySelector("canvas");
 const linesCheckbox = document.querySelector('#lines');
 linesCheckbox.addEventListener('change', resize);
 
+const info = document.querySelector('#info');
+
 var currentPlot = 0;
-canvas.addEventListener('click', () => { currentPlot++; resize(); }, false);
+canvas.addEventListener('click', (e) => { 
+  let l = (e.clientX - canvas.getBoundingClientRect().left) < (canvas.clientWidth/2);
+  currentPlot = Math.abs(currentPlot +  (l ? -1 : +1));
+  resize(); 
+}, false);
 
 function draw(canvas, scale=1, flipxy=false) {
   var ctx = canvas.getContext('2d');
   ctx.lineWidth = 0.5 * scale;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  let lines;
-  switch(currentPlot%8) {
-    case 0: lines = [calculateOneliner()]; break;
-    case 1: lines = [calculateOneliner(360, 90.2, 2.1)]; break;
-    case 2: lines = calculateFantasy(); break;
-    case 3: lines = calculateFantasy(
-                        "(1 / COS((I - PI)*(I - PI) - (I==0)))", [3, 1]); break;
-    case 4: lines = calculateFantasy("SIN(2*I) + TAN(I)"); break;
-    case 5: lines = calculateFantasy("SIN(2*I) + TAN(I)", [1, 14]); break;
-    case 6: lines = calculateFantasy("SIN(4*I)", [1, 4], 1); break;
-    case 7: lines = calculateFantasy("SIN(3*I)", [1, 1], 1); break;
-  }
+  const generators = [
+    () => [calculateOneliner()],
+    () => [calculateOneliner(360, 90.2, 2.1)],
+    () => [calculateOneliner(400, 179, 3)], // "Super Nova"
+    () => [calculateOneliner(200, 46, 1)], // "Höhle links"
+    () => [calculateOneliner(300, 170, 1)], // "Sonne"
+    () => calculateFantasy(),
+    () => calculateFantasy("(1 / COS((I - PI)*(I - PI) - (I==0)))", [3, 1]),
+    () => calculateFantasy("SIN(2*I) + TAN(I)"),
+    () => calculateFantasy("SIN(2*I) + TAN(I)", [1, 14]),
+    () => calculateFantasy("SIN(4*I)", [1, 4], 1),
+    () => calculateFantasy("SIN(3*I)", [1, 1], 1),
+  ];
+
+  let lines = generators[currentPlot % generators.length]();
+
+  const numPoints = lines.reduce((acc, l) => { return acc + l.length; }, 0)
+  const s = (lines.length > 1) ? 's'  : '';
+  info.innerHTML = `${lines.length} line${s}, ${numPoints} points`;
 
   const plotter = new Plotter(ctx, scale, 
                             linesCheckbox.checked ? 'lines' : 'points', flipxy);
