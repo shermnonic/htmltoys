@@ -1,8 +1,8 @@
 <!doctype html>
 <html>
-<head>
-<title>bitart</title>
+<head><title>bitart</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="386dx25, mnemonic@386dx25.de"/>
 <style>
 body { text-align: center; }
 canvas { width: 100%; max-width: 512px; image-rendering: pixelated; }
@@ -43,22 +43,20 @@ function draw(expression) {
   ctx.putImageData(imageData, 0, 0);  // blit to canvas
 }
 
-// Manually simplified bitart bot expressions (or my own if no link given)
+// Manually simplified bitart bot expressions (or my own if no link given); ensure integer division via `~~`:
 const expressions = [ // [expression, link_id, original]
   ['~((-y ^ x ^ 20) | 1) % 6', '116951377322775847', '(~(((-y) ^ (x ^ 20)) | ((y / y) - (x % x)))) % 6'],
-  ['((-((-y) * (y & 21))) % (-((x | x) ^ (x + 22)))) % 10', '116950669637011022', null],  
-  // The following simplified version is only 99% accurate
-  ['~~( (y ^ x) / y )', '116950198022348778', '((((x | x) / (x % x)) | (~(y - y))) % (((~y) ^ (-x)) / ((-y) - (y - y)))) % 9'],
-  // Derivation from original:
-  // Force integer division result via `~~`:
-  // '((( ~~( (x | x) / (x % x) ) ) | (~(y - y))) % ( ~~( ((~y) ^ (-x)) / ((-y) - (y - y)) ) )) % 9';
-  // Simplify further:
-  // '((( ~~( x / 0 ) ) | 1) % ( ~~( ((~y) ^ (-x)) / ((-y) - (y - y)) ) )) % 9';
-  // '( 1 % ( ~~( ((~y) ^ (-x)) / (-y) ) )) % 9';
-  // '( ~~( ((~y) ^ (-x)) / y ) ) % 9';
-  ['(~y ^ -x) % 9', null, null], // trivial patterns for % 1, 2, 4, 8, 16, ...; try -x and +x
+  ['( y * (y & 21) % (x ^ (x + 22)) ) % 10', '116950669637011022', '((-((-y) * (y & 21))) % (-((x | x) ^ (x + 22)))) % 10'],  
+  ['~~( (x ^ y) / y )', '116950198022348778', '((((x | x) / (x % x)) | (~(y - y))) % (((~y) ^ (-x)) / ((-y) - (y - y)))) % 9'],
+    // Note that '~~( (x ^ y) / y )' is not pixel exact but largely accurate simplification of original
+  ['(x ^ ~y) % 3', null, null],  ['(x ^ ~y) % 5', null, null],  ['(x ^ ~y) % 6', null, null],  ['(x ^ ~y) % 7', null, null],
+  ['(x ^ ~y) % 9', null, null], // trivial patterns for % 1, 2, 4, 8, 16, ...; try shifting x to alleviate center symmetry/diagonal
+    // Simplification steps:
+    // '((( ~~( x / 0 ) ) | 1) % ( ~~( ((~y) ^ (-x)) / ((-y) - (y - y)) ) )) % 9';
+    // '( 1 % ( ~~( ((~y) ^ (-x)) / (-y) ) )) % 9';
+    // '( ~~( ((~y) ^ (-x)) / y ) ) % 9';
+  ['((x ^ ~y) | 1) % 9', null, null],
   ['((((x + y) ^ (~y)) % (y + x)) * (((3 | y) - (~x)) & (~~(x / 13) - (1 | x)))) % 4', '116749893754526797', null],
-  // Original: f(x,y) = 
   ['(x - (((7 - y) * (y * 6)) - (~~(y / 13) ^ (x + y)))) % 10', '116751309418515014',
       '((((y % y) / (~x)) + (-(-x))) - (((7 - y) * (y * 6)) - ((y / 13) ^ (x + y)))) % 10']
 ];
@@ -68,6 +66,7 @@ const expressions = [ // [expression, link_id, original]
 const link_prefix = 'https://mastodon.social/@bitartbot@freeradical.zone/';
 
 function selectExpression(index) {  
+  console.log(index)
   const [expression, link_id, original] = expressions[index];
 
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -90,11 +89,12 @@ function selectExpression(index) {
 var currentIndex = 0;
 selectExpression(currentIndex);
 
-canvas.onclick = () => { 
-  currentIndex = (currentIndex + 1) % expressions.length;
+canvas.addEventListener('click', (e) => { 
+  let l = (e.clientX - canvas.getBoundingClientRect().left) < (canvas.clientWidth/2);
+  currentIndex = (currentIndex + (l ? -1 : +1)) % expressions.length;
+  if(currentIndex < 0) currentIndex = expressions.length + currentIndex;
   selectExpression(currentIndex); 
-}
-
+}, false);
 </script>
 </body>
 </html>
