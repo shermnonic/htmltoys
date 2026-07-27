@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head><title>bitart-fly</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="386dx25, mnemonic@386dx25.de"/>
+<style>
+body { text-align: center; }
+canvas { width: 100%; max-width: 512px; image-rendering: pixelated; }
+.formula { font-family: 'Courier New', Courier, monospace; font-size: 90%; }
+@media (prefers-color-scheme: dark) {
+  body { color: white; background: #121212; }
+  a { color: pink; }
+}
+</style>
+</head>
+<body>
+<canvas width="256px" height="256px" style="border: 1px solid black"></canvas>
+<script>
+const canvas = document.querySelector("canvas");
+var ctx = canvas.getContext('2d');
+
+const [width, height] = [canvas.width, canvas.height];
+
+const imageData = ctx.getImageData(0, 0, width, height);
+var pixels = new Uint32Array(imageData.data.buffer); // efficient view
+
+function pset(x, y, value) {
+  pixels[y * width + x] = (255 << 24) | (value << 16) | (value << 8) | value;
+}
+
+function draw(x0=0, y0=0, modulus=19) {
+  for(let y=0; y < height; ++y) {
+    for(let x=0; x < width; ++x) {
+      let value = (((x+Math.round(x0)) ^ (y+Math.round(y0))) % Math.round(modulus)) <= 1;
+      pset(x,y, value ? 0 : 255);
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);  // blit to canvas
+}
+
+// "Fly over" my bitart pattern
+var x=0, y=0;
+var dx=3, dy=1;
+
+function frame(t, dt) {
+  x += dx*(dt/100.0);
+  y += dy*(dt/100.0);
+  let modulus = Math.floor(3 + 27*Math.abs(Math.sin(t/10000.0)));
+  if(modulus % 2 == 0) modulus += 1;
+  draw(x,y, modulus);
+}
+
+// Update at 25fps
+var tlast = undefined;
+function update(t) {
+    if(tlast === undefined) {
+        tlast = t;
+    }
+    const dt = t - tlast;
+    if(dt > 40) { // 40ms = 25fps redraw rate
+        tlast = t;
+        frame(t, dt);
+    }
+    window.requestAnimationFrame(update);
+}
+window.requestAnimationFrame(update);
+
+</script>
+</body>
+</html>
