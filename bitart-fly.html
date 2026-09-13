@@ -14,13 +14,15 @@ canvas { width: 100%; max-width: 512px; image-rendering: pixelated; }
 </style>
 </head>
 <body>
+<h1>bitart-fly</h1>
 <canvas width="256px" height="256px" style="border: 1px solid black"></canvas>
+<p>by <a href="https://386dx25.de">386dx25.de</a>, 2026<br>
+    (<a href="https://github.com/shermnonic/htmltoys/blob/main/bitart-fly.html">source code</a>, 
+    <a href="https://www.shadertoy.com/view/NfG3Wy">shadertoy</a>)</p>
 <script>
 const canvas = document.querySelector("canvas");
 var ctx = canvas.getContext('2d');
-
 const [width, height] = [canvas.width, canvas.height];
-
 const imageData = ctx.getImageData(0, 0, width, height);
 var pixels = new Uint32Array(imageData.data.buffer); // efficient view
 
