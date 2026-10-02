@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Decay</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #f3f0e9;
+      text-align: center;
+    }
+
+    canvas {
+      display: block;
+      width: min(90vw, 512px);
+      height: min(90vw, 512px);
+      border: 1px solid #222;
+    }
+  </style>
+</head>
+
+<body>
+  <figure>
+    <figcaption>Colorful stripes morphed by random discs. Colors chosen by agent.</figcaption>
+    <canvas id="stripes" width="512" height="512"></canvas>
+  </figure>
+  <p>Inspired by <a href="https://www.lexaloffle.com/bbs/?pid=digable_planetoids">"ye olde tweetcart decay effect"</a>.</p>
+  <script>
+    const canvas = document.getElementById('stripes');
+    const context = canvas.getContext('2d');
+    const colors = ['#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#073b4c'];
+    const stripeWidth = canvas.width / colors.length;
+
+    colors.forEach((color, index) => {
+      context.fillStyle = color;
+      context.fillRect(index * stripeWidth, 0, stripeWidth, canvas.height);
+    });
+
+    function frame(t, dt) {
+      for (let i = 0; i < 200; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const color = context.getImageData(x, y, 1, 1).data;
+        const radius = Math.random() * 10 + 4;
+        context.beginPath();
+        context.arc(x, y, radius, 0, Math.PI * 2);
+        context.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 1.0)`;
+        context.fill();
+      }
+    }
+
+    // Update at 25fps
+    var tlast = undefined;
+    function update(t) {
+      if (tlast === undefined) {
+        tlast = t;
+      }
+      const dt = t - tlast;
+      if (dt > 40) { // 40ms = 25fps redraw rate
+        tlast = t;
+        frame(t, dt);
+      }
+      window.requestAnimationFrame(update);
+    }
+    window.requestAnimationFrame(update);
+  </script>
+</body>
+
+</html>
