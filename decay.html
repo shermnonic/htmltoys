@@ -17,8 +17,8 @@
 
     canvas {
       display: block;
-      width: min(90vw, 512px);
-      height: min(90vw, 512px);
+      width: min(70vw, 512px);
+      height: min(70vw, 512px);
       border: 1px solid #222;
     }
   </style>
@@ -29,11 +29,12 @@
     <figcaption>Colorful stripes morphed by random discs. Colors chosen by agent.</figcaption>
     <canvas id="stripes" width="512" height="512"></canvas>
   </figure>
-  <p>Inspired by <a href="https://www.lexaloffle.com/bbs/?pid=digable_planetoids">"ye olde tweetcart decay effect"</a>.</p>
+  <p>Inspired by <a href="https://www.lexaloffle.com/bbs/?pid=digable_planetoids">"ye olde tweetcart decay effect"</a>.
+  </p>
   <script>
     const canvas = document.getElementById('stripes');
-    const context = canvas.getContext('2d');
-    const colors = ['#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#073b4c'];
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    const colors = ['#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#073b4c'];  // try ['#fff', '#000'];
     const stripeWidth = canvas.width / colors.length;
 
     colors.forEach((color, index) => {
@@ -41,17 +42,39 @@
       context.fillRect(index * stripeWidth, 0, stripeWidth, canvas.height);
     });
 
+    let pget = (x, y) => context.getImageData(x, y, 1, 1).data;
+    let rgba = (color, alpha = 1.0) => `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha})`;
+
+    var frameCount = 0;
+
     function frame(t, dt) {
       for (let i = 0; i < 200; i++) {
         const x = Math.random() * canvas.width;
         const y = Math.random() * canvas.height;
-        const color = context.getImageData(x, y, 1, 1).data;
-        const radius = Math.random() * 10 + 4;
+        const color = pget(x, y);
+        const radius = Math.random() * 10 + 4;  // try different size factors
         context.beginPath();
         context.arc(x, y, radius, 0, Math.PI * 2);
-        context.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 1.0)`;
+        context.fillStyle = rgba(color, 1.0);  // try alpha < 1.0
         context.fill();
       }
+
+      if (frameCount++ % 10 == 0) {
+        avgColor = estimateAverageColor();
+        document.body.style.background = rgba(avgColor);
+      }
+    }
+
+    function estimateAverageColor() {
+      let sum = [0, 0, 0];
+      let count = 0;
+      for (let y = 5; y < canvas.height; y += 10) {
+        for (let x = 5; x < canvas.width; x += 10, count++) {
+          const color = pget(x, y);
+          for (let i = 0; i < 3; ++i) sum[i] += color[i];
+        }
+      }
+      return sum.map((val) => val / count);
     }
 
     // Update at 25fps
