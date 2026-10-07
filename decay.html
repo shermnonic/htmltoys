@@ -8,7 +8,7 @@
   <style>
     body {
       margin: 0;
-      min-height: 100vh;
+      min-height: 100svh;
       display: grid;
       place-items: center;
       background: #f3f0e9;
@@ -16,9 +16,9 @@
     }
 
     canvas {
-      display: block;
-      width: min(70vw, 512px);
-      height: min(70vw, 512px);
+      width: 90%;
+      max-width: 512px;
+      max-height: 512px;
       border: 1px solid #222;
     }
   </style>
@@ -26,15 +26,20 @@
 
 <body>
   <figure>
-    <figcaption>Colorful stripes morphed by random discs. Colors chosen by agent.</figcaption>
+    <figcaption>Color stripes morphed by random discs.</figcaption>
     <canvas id="stripes" width="512" height="512"></canvas>
   </figure>
-  <p>Inspired by <a href="https://www.lexaloffle.com/bbs/?pid=digable_planetoids">"ye olde tweetcart decay effect"</a>.
+  <p>Inspired by <a href="https://www.lexaloffle.com/bbs/?pid=digable_planetoids">"ye olde tweetcart decay effect"</a> (external).
+    Also in <a href="?colors=fff,000">black &amp; white</a>.
   </p>
   <script>
+    // parse url parameters
+    let params = new URLSearchParams(document.location.search.substring(1));
+    let colors = params.get('colors')?.split(',').map((s) => '#'+s);
+    colors = colors ? colors : ['#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#073b4c'];
+
     const canvas = document.getElementById('stripes');
     const context = canvas.getContext('2d', { willReadFrequently: true });
-    const colors = ['#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#073b4c'];  // try ['#fff', '#000'];
     const stripeWidth = canvas.width / colors.length;
 
     colors.forEach((color, index) => {
